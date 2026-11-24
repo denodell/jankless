@@ -9,11 +9,13 @@ import {
   elementFromInvoker,
   groupInteractions,
   stableInvoker,
+  type Interaction,
 } from '../../packages/butter-churn/src/analysis/interactions.js';
 import { GENERATED_ID } from '../../packages/butter-churn/src/collector/collector.js';
 import {
   classifyFrame,
   classifyFrames,
+  FOLLOW_UP_MS,
   LOAD_GRACE_MS,
 } from '../../packages/butter-churn/src/analysis/classify.js';
 import {
@@ -253,6 +255,38 @@ test('attributeFrames', () => {
     { ...frames[0]!, scripts: [script({ invoker: 'DIV#root.onclick', sourceFunctionName: 'QS' })] },
   ]).topScripts[0]!;
   expect(top).toMatchObject({ invoker: 'DIV#root.onclick', fn: 'QS', during: ['click on button#checkout'] });
+});
+
+test('classify: work an input starts later', () => {
+  const timer = script({ invoker: 'TimerHandler:setTimeout', invokerType: 'user-callback' });
+  const later = (start: number) => frame({ start, duration: 200, scripts: [timer] });
+  const click: Interaction = {
+    id: 1,
+    event: 'click',
+    start: 2000,
+    duration: 16,
+    target: 'x',
+    targetSource: 'event-timing',
+  };
+  const base = { interactions: [], scrolls: [], loadEventEnd: 100 };
+  const afterClick = { ...base, interactions: [click] };
+
+  // A timer 300ms after the click painted.
+  expect(classifyFrame(later(2316), afterClick)).toBe('interaction');
+  expect(classifyFrame(later(2016 + FOLLOW_UP_MS - 1), afterClick)).toBe('interaction');
+  expect(classifyFrame(later(2016 + FOLLOW_UP_MS), afterClick)).toBe('background');
+  // A click that painted in under 16ms has no Event Timing entry: the raw input ties them.
+  expect(classifyFrame(later(2300), { ...base, inputs: [2000] })).toBe('interaction');
+  expect(classifyFrame(later(1900), { ...base, inputs: [2000] })).toBe('background');
+  // Work after a scroll stops, such as a debounced scroll handler.
+  expect(classifyFrame(later(2150), { ...base, scrolls: [{ t: 2000, target: 'document' }] })).toBe(
+    'interaction',
+  );
+  // A setInterval callback runs on its own schedule, whatever the input.
+  const interval = script({ invoker: 'TimerHandler:setInterval', invokerType: 'user-callback' });
+  expect(classifyFrame(frame({ start: 2300, scripts: [interval] }), afterClick)).toBe('background');
+  // Load work stays load work, even straight after an input.
+  expect(classifyFrame(later(120), { ...base, inputs: [110] })).toBe('load');
 });
 
 test('classify: input arriving during a background frame', () => {

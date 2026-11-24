@@ -48,6 +48,8 @@ export interface StreamBatch {
   loadEventEnd?: number;
   /** The latest raw input (pointerdown or keydown) in this batch, on the document's clock. */
   lastInput?: { at: number; type: string };
+  /** When each raw input in this batch happened, on the document's clock. */
+  inputs?: number[];
   errors: string[];
 }
 
@@ -95,6 +97,11 @@ export interface CollectorSnapshot {
   loaf: LoafRecord[];
   events: EventRecord[];
   scrolls: ScrollRecord[];
+  /**
+   * When each raw input (a pointer press or a key) happened. Event Timing leaves out an input
+   * that painted in under 16ms, and work it starts later still has to be tied to it.
+   */
+  inputs: number[];
   errors: string[];
   overflow: { loaf: number; events: number; scrolls: number };
 }
@@ -109,6 +116,8 @@ export interface CollectorApi {
   snapshot(from: number, to: number): CollectorSnapshot;
   settle(quietMs: number, timeoutMs: number): Promise<SettleOutcome>;
   flush(): Promise<void>;
+  /** Resolves once `ms` have passed since the last input (a pointer press, a key or a scroll). */
+  followUp(ms: number): Promise<void>;
 }
 
 export function installCollector(config: CollectorConfig): void {
@@ -120,9 +129,11 @@ export function installCollector(config: CollectorConfig): void {
   const loaf: LoafRecord[] = [];
   const events: EventRecord[] = [];
   const scrolls: ScrollRecord[] = [];
+  const inputs: number[] = [];
   const errors: string[] = [];
   const overflow = { loaf: 0, events: 0, scrolls: 0 };
   let lastLongFrameEnd = 0;
+  let lastInput = 0;
   const supportedTypes = (() => {
     try {
       return PerformanceObserver.supportedEntryTypes || [];
@@ -220,8 +231,10 @@ export function installCollector(config: CollectorConfig): void {
         queueMicrotask(send);
       }
       if (kind === 'load') outbox.loadEventEnd = record as number;
-      else if (kind === 'input') outbox.lastInput = record as StreamBatch['lastInput'];
-      else (outbox[kind] as unknown[]).push(record);
+      else if (kind === 'input') {
+        outbox.lastInput = record as StreamBatch['lastInput'];
+        (outbox.inputs ??= []).push(outbox.lastInput!.at);
+      } else (outbox[kind] as unknown[]).push(record);
     } catch (err) {
       fail('stream', err);
     }
@@ -332,6 +345,7 @@ export function installCollector(config: CollectorConfig): void {
       'scroll',
       (event) => {
         try {
+          lastInput = performance.now();
           const t = event.target;
           push(
             scrolls,
@@ -351,6 +365,31 @@ export function installCollector(config: CollectorConfig): void {
     fail('scroll listen', err);
   }
 
+  // Raw inputs. Work an input starts later (a timer, a fetch that renders) is tied to it by
+  // when it happened, and a measurement waits a moment after the last one. When streaming, they're
+  // sent as they happen: the browser only measures an input once the next frame paints, so an
+  // input the test navigates away from immediately is never measured, and knowing when it
+  // happened lets that be reported.
+  for (const type of ['pointerdown', 'keydown']) {
+    try {
+      addEventListener(
+        type,
+        (e) => {
+          try {
+            lastInput = performance.now();
+            if (inputs.length < config.maxRecords) inputs.push(e.timeStamp);
+            stream('input', { at: e.timeStamp, type: e.type });
+          } catch (err) {
+            fail('input', err);
+          }
+        },
+        { capture: true, passive: true },
+      );
+    } catch (err) {
+      fail('input listen', err);
+    }
+  }
+
   const loadEventEnd = () => {
     try {
       const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
@@ -361,19 +400,6 @@ export function installCollector(config: CollectorConfig): void {
   };
 
   if (config.stream) {
-    // Raw inputs, streamed as they happen. The browser only measures an input once the next
-    // frame paints, so an input the test navigates away from immediately is never measured;
-    // knowing when it happened lets that be reported rather than silently missing.
-    for (const type of ['pointerdown', 'keydown']) {
-      try {
-        addEventListener(type, (e) => stream('input', { at: e.timeStamp, type: e.type }), {
-          capture: true,
-          passive: true,
-        });
-      } catch (err) {
-        fail('input listen', err);
-      }
-    }
     try {
       addEventListener('load', () => {
         // loadEventEnd is set after load handlers finish.
@@ -397,6 +423,7 @@ export function installCollector(config: CollectorConfig): void {
         loaf: loaf.filter((f) => overlaps(f.start, f.start + f.duration)),
         events: events.filter((e) => overlaps(e.start, e.start + e.duration)),
         scrolls: scrolls.filter((s) => s.t >= from && s.t <= to),
+        inputs: inputs.filter((t) => t >= from && t <= to),
         errors: errors.slice(),
         overflow: { loaf: overflow.loaf, events: overflow.events, scrolls: overflow.scrolls },
       };
@@ -423,6 +450,11 @@ export function installCollector(config: CollectorConfig): void {
       await nextFrame();
       await nextFrame();
       await new Promise((resolve) => setTimeout(resolve, 0));
+    },
+    // A page with no input yet has nothing to wait for.
+    async followUp(ms) {
+      const left = lastInput > 0 ? lastInput + ms - performance.now() : 0;
+      if (left > 0) await new Promise((resolve) => setTimeout(resolve, left));
     },
   };
 

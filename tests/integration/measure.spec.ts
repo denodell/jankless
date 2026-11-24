@@ -29,6 +29,23 @@ test('a 150ms click handler', async ({ page, butter }) => {
   expect(result.spread['longFrames.count']).toEqual({ min: 1, median: 1, max: 1 });
 });
 
+test('work a click starts in a timer, after the click has painted', async ({ page, butter }) => {
+  await page.goto('/click.html?ms=150&delay=300');
+  // The action returns as soon as the click is sent, 300ms before the work starts.
+  const result = await butter.measure('save later', () => page.click('#later'));
+  await attach(result);
+
+  expect(result.longFrames!.count).toBe(1);
+  expect(result.longFrames!.worstMs).toBeGreaterThanOrEqual(150);
+  expect(result.longFrames!.topScripts[0]).toMatchObject({
+    invoker: 'TimerHandler:setTimeout',
+    fn: 'onLaterTimer',
+  });
+  expect(result.frameClasses).toEqual({ interaction: 1, load: 0, background: 0 });
+  // The click itself painted quickly: the time is in the long frame, not in input-to-paint.
+  expect(result.input!.p95ToPaintMs ?? 0).toBeLessThan(100);
+});
+
 test('a click on a nested span is reported against the button', async ({ page, butter }) => {
   await page.goto('/click.html?ms=80');
   const result = await butter.measure('nested', () => page.click('#nested .label'));

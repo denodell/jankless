@@ -19,7 +19,7 @@ The in-page collector wraps every observer callback, and each step that handles 
 1. The CPU is slowed 4x by default with `Emulation.setCPUThrottlingRate`. Without it, moderate jank on a fast machine produces no long frames at all.
 2. A warm-up run is made first and discarded, because the first input on a page can take a slow frame even when the page does no work.
 3. Before each run the page is reset: reloaded by default, left as it is with `'none'`, or put back by your own function. The library then waits, for up to 5 seconds, until the page has loaded and no long frame has ended for 500ms. A page that never goes quiet gets a note instead of a failure.
-4. The action runs between two `performance.mark()` calls. Full mode only counts trace frames between those marks, and only from the page's own renderer process, which also leaves out the compositor for Playwright's initial `about:blank` page ([trace-categories.md](trace-categories.md)).
+4. The action runs between two `performance.mark()` calls. The second mark is made no sooner than half a second after the action's last input, so work the input starts in a timer is still inside them. An action that waits for its own result, as most tests do with an `expect`, covers work that starts later than that. Full mode only counts trace frames between those marks, and only from the page's own renderer process, which also leaves out the compositor for Playwright's initial `about:blank` page ([trace-categories.md](trace-categories.md)).
 5. The result is the median of the runs. A single run has few frames, so one stray pair of drops can move it a lot.
 
 ## Classify long frames
@@ -31,8 +31,11 @@ The library sorts every long frame into interaction, load or background work, wi
 3. If the frame started during an Event Timing interaction (with 2ms of tolerance for rounding), it's an interaction frame. Overlapping the interaction isn't enough. A background frame that was already running when a click arrived delayed the input, and input-to-paint already includes that delay. Counting the frame as a long frame as well would make the check depend on where the timer happened to fall.
 4. If a scroll event fired during the frame, it's an interaction frame.
 5. If the frame started before load finished, or within 50ms after, it's load.
-6. If an `event-listener` script ran in the frame, it's an interaction frame. This is a secondary signal that catches input the other rules missed.
-7. Anything left is background.
+6. If the frame started within a second after an input, an interaction's paint or a scroll event, it's an interaction frame. A debounced search, a `setTimeout` and a fetch that renders when it returns all do their work after the input has painted, and the person who clicked still waits for it. Inputs are timed with the collector's own `pointerdown` and `keydown` listeners as well as Event Timing, because Event Timing has no entry for an input that painted in under 16ms.
+7. If an `event-listener` script ran in the frame, it's an interaction frame. This is a secondary signal that catches input the other rules missed.
+8. Anything left is background.
+
+Rule 6 has a cost. A one-off background timer that happens to fire within a second of an input is counted as that input's work. The page is quiet before each `measure()` run starts, so this is rare there, and `setInterval` work is still left out by rule 1.
 
 Blame is given to one script at a time, rather than to a whole frame. Inside an interaction frame, a script that started before the input arrived (a timer the click interrupted) isn't blamed, and its share of the frame is dropped. Each script in the report lists the interactions it blocked (`during`), because when a framework dispatches events, LoAF names the dispatcher and not your handler ([frameworks.md](frameworks.md)).
 

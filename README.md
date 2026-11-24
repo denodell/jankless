@@ -287,6 +287,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 - Headless Chrome runs at 60Hz, so 120Hz numbers are a prediction.
 - Event Timing doesn't report interactions under 16ms, so `input.interactions` only counts slower ones.
 - An action that navigates to a new page can't be measured, and the result says so.
+- Work that starts more than a second after an input, such as a slow fetch that renders when it returns, isn't counted as that input's work. `measure()` also stops collecting half a second after the action's last input, so an action whose work starts later wants to wait for its result, with an `expect` on what appears.
 - A page whose main thread is already busy for the whole interaction can't measurably get worse: added work takes time from the page's own rendering instead of adding to it, and only the CPU profile shows it. A development build is often like this with the CPU slowed 4x, so measure a production build. On [Actual](https://github.com/actualbudget/actual)'s transaction list, a planted 3ms per row went unreported in its dev build, and dropped frames on time from 59% to 27% in its production build.
 - A dev server that watches your project, like Vite's, reloads its pages whenever a file it watches is rewritten. `--update-snapshots` rewrites baselines next to your tests while other tests are running, so main-branch CI wants a production build (such as `vite preview`), or the baselines in the dev server's ignored files. Automatic mode keeps its history in `node_modules/.cache`, which dev servers ignore.
 
