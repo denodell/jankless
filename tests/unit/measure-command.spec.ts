@@ -148,6 +148,7 @@ for (const [name, args, message] of [
     '--speed goes with --scroll.',
   ],
   ['steps that are not JSON', [URL, '--steps', 'click'], '--steps must be JSON.'],
+  ['steps that are not a list', [URL, '--steps', 'null'], '--steps must be a JSON array'],
   [
     'a wait that is not a number',
     [URL, '--click', '#a', '--wait', 'soon'],

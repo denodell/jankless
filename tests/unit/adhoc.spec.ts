@@ -73,6 +73,11 @@ for (const [name, request, message] of [
     { url: URL, scroll: { input: 'drag' } },
     "scroll's input must be wheel, touch or keys",
   ],
+  [
+    'a mode that does not exist',
+    { url: URL, steps: [click], mode: 'fast' },
+    "mode must be quick or full, got 'fast'",
+  ],
   ['a bad scroll distance', { url: URL, scroll: { distance: -5 } }, 'distance must be'],
   [
     'a bad baseline use',

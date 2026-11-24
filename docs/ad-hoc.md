@@ -95,17 +95,17 @@ These baselines are separate from the ones your tests record. A check that shoul
 
 `playwright-butter-mcp` is an [MCP](https://modelcontextprotocol.io) server with the same measurements as tools, so a coding agent can check its own change before you review it. Its [README](../packages/playwright-butter-mcp/README.md) covers the setup. It has three tools:
 
-| Tool                  | What it does                                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `measure_interaction` | Measures the steps or the scroll on a URL, as `measure` does, and returns the label.                                                                   |
-| `compare_baseline`    | Measures a label again, exactly as it was last measured, and compares it with the baseline. With `record`, it replaces the baseline.                   |
-| `get_hot_functions`   | Lists the functions that used the most CPU in a label's last result, with their files, lines and callers, and the scripts that ran in its long frames. |
+| Tool                  | What it does                                                                                                                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `measure_interaction` | Measures the steps or the scroll on a URL, as `measure` does, and returns the label.                                                                                                     |
+| `compare_baseline`    | Measures a label again, exactly as it was last measured, and compares it with the baseline. With `record`, it replaces the baseline.                                                     |
+| `get_hot_functions`   | Lists the functions that used the most CPU in a label's last result, with their files, lines and callers, and the scripts that ran in its long frames. A result keeps the top 5 of each. |
 
 The agent calls `measure_interaction` before it changes anything, makes the change, and then calls `compare_baseline` with the label. Each tool returns a few lines of text, with the verdict first, and the same results as structured content. A full trace would fill the agent's context, so the tools only return what was asked for.
 
 `compare_baseline` and `get_hot_functions` also accept the label of a check from your test suite, or its test's title. They then return what the last test run found, from the result files in `test-results`. The server can't run the test again, so its reply says which test to run.
 
-Measurements run one at a time, because two browsers measuring at once would take CPU time from each other.
+Measurements run one at a time, because two browsers measuring at once would take CPU time from each other. A measurement can take a minute or more in full mode, so the server sends a progress update as each run starts, to clients that ask for them. A client that resets its timeout on progress then keeps waiting until the measurement finishes.
 
 ## Call it from code
 

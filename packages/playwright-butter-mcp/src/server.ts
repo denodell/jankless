@@ -15,6 +15,7 @@ import {
   remeasure,
   storedOutcome,
   summarize,
+  type AdhocHooks,
   type AdhocOutcome,
   type AdhocRequest,
 } from 'playwright-butter/adhoc';
@@ -163,6 +164,35 @@ const answered = (outcome: AdhocOutcome, note = ''): CallToolResult => ({
   structuredContent: { ...summarize(outcome) },
 });
 
+/** What a tool call is given besides its arguments: the parts progress updates need. */
+interface CallExtra {
+  _meta?: { progressToken?: string | number };
+  sendNotification: (notification: {
+    method: 'notifications/progress';
+    params: { progressToken: string | number; progress: number; total?: number; message?: string };
+  }) => Promise<void>;
+}
+
+/**
+ * Reports each run as it starts, when the client asked for progress. A measurement can take
+ * a minute or more, and a client that gets progress can keep waiting instead of timing out.
+ */
+function progressHooks(extra: CallExtra): AdhocHooks {
+  const progressToken = extra._meta?.progressToken;
+  if (progressToken === undefined) return {};
+  return {
+    onRun: ({ run, total, warmUp }) => {
+      const message = warmUp ? `Warm-up run (1 of ${total})` : `Run ${run} of ${total}`;
+      void extra
+        .sendNotification({
+          method: 'notifications/progress',
+          params: { progressToken, progress: run - 1, total, message },
+        })
+        .catch(() => undefined);
+    },
+  };
+}
+
 export function createServer(options: ServerOptions = {}): McpServer {
   const dir = resolve(options.dir ?? defaultAdhocDir());
   const results = options.results ?? 'test-results';
@@ -189,10 +219,10 @@ export function createServer(options: ServerOptions = {}): McpServer {
       outputSchema: outcomeOutput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    (args) =>
+    (args, extra) =>
       inTurn(async () => {
         try {
-          return answered(await measureAdhoc({ ...(args as AdhocRequest), dir }));
+          return answered(await measureAdhoc({ ...(args as AdhocRequest), dir }, progressHooks(extra)));
         } catch (err) {
           return failed((err as Error).message);
         }
@@ -215,11 +245,13 @@ export function createServer(options: ServerOptions = {}): McpServer {
       outputSchema: outcomeOutput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    ({ label, record }) =>
+    ({ label, record }, extra) =>
       inTurn(async () => {
         try {
           if (readRecipe(label, dir)) {
-            return answered(await remeasure(label, { dir, baseline: record ? 'record' : 'compare' }));
+            return answered(
+              await remeasure(label, { dir, baseline: record ? 'record' : 'compare' }, progressHooks(extra)),
+            );
           }
           const found = findResult(label, { dir, results });
           if (!found) return failed(unknownLabel(label, dir, results));
@@ -242,7 +274,13 @@ export function createServer(options: ServerOptions = {}): McpServer {
         'For a label already measured: the functions that used the most CPU during the interaction, with their files, lines and callers (needs mode "full"), and the scripts that ran in its long frames. Reads the last result; it measures nothing.',
       inputSchema: {
         label: z.string().describe('A label from measure_interaction, or a test check’s label.'),
-        limit: z.number().int().min(1).max(30).optional().describe('How many to list. Default 10.'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(5)
+          .optional()
+          .describe('How many to list. A result keeps its top 5, which is the default.'),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -250,7 +288,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
       const found = findResult(label, { dir, results });
       if (!found) return failed(unknownLabel(label, dir, results));
       const { result } = found;
-      const count = limit ?? 10;
+      const count = limit ?? 5;
       return {
         content: [{ type: 'text', text: formatHotFunctions(result, count) }],
         structuredContent: {

@@ -39,6 +39,8 @@ The server runs in your project's folder, and the page to measure has to be runn
 | `compare_baseline`    | Measures a label again, exactly as it was last measured, and says whether the page is less smooth, smoother, or shows no clear change.                     |
 | `get_hot_functions`   | Lists the functions that used the most CPU in a label's last result, and the scripts that ran in its long frames.                                          |
 
+`measure_interaction` and `compare_baseline` send a progress update as each run starts, to clients that ask for them, because a measurement in full mode can take a minute or more.
+
 A typical exchange, once the agent has been asked to make the filters panel open faster:
 
 1. `measure_interaction` with `{ "url": "http://localhost:5173/products", "steps": [{ "action": "click", "selector": "#filters" }], "mode": "full" }`. It records the baseline and returns the label `click #filters on /products`.

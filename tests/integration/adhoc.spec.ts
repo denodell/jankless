@@ -209,12 +209,26 @@ test('the MCP server: measure, change, compare, then ask where the time went', a
   const call = (name: string, args: Record<string, unknown>) =>
     client.callTool({ name, arguments: args }, undefined, { timeout: 60_000 }) as Promise<Called>;
   try {
-    const measured = await call('measure_interaction', {
-      url: `${baseURL}/click.html?ms=150`,
-      steps: [{ action: 'click', selector: '#heavy' }],
-      mode: 'full',
-      runs: 2,
-    });
+    // A client that asks for progress hears about each run as it starts.
+    const progress: { progress: number; total?: number; message?: string }[] = [];
+    const measured = (await client.callTool(
+      {
+        name: 'measure_interaction',
+        arguments: {
+          url: `${baseURL}/click.html?ms=150`,
+          steps: [{ action: 'click', selector: '#heavy' }],
+          mode: 'full',
+          runs: 2,
+        },
+      },
+      undefined,
+      { timeout: 60_000, resetTimeoutOnProgress: true, onprogress: (p) => progress.push(p) },
+    )) as Called;
+    expect(progress).toEqual([
+      { progress: 0, total: 3, message: 'Warm-up run (1 of 3)' },
+      { progress: 1, total: 3, message: 'Run 2 of 3' },
+      { progress: 2, total: 3, message: 'Run 3 of 3' },
+    ]);
     expect(measured.isError).toBeFalsy();
     expect(measured.structuredContent).toMatchObject({
       label: 'click #heavy on /click.html?ms=150',

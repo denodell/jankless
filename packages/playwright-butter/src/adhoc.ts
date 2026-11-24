@@ -227,7 +227,9 @@ export function validateRequest(input: unknown): AdhocRequest {
     if (!isObject(v) || !(Number(v.width) > 0) || !(Number(v.height) > 0))
       fail('viewport needs a width and a height in pixels.');
   }
-  resolveOptions([optionsOf(r as AdhocRequest)]); // mode, runs, cpuThrottling, maxIncrease
+  if (r.mode !== undefined && r.mode !== 'quick' && r.mode !== 'full')
+    fail(`mode must be quick or full, got '${String(r.mode)}'.`);
+  resolveOptions([optionsOf(r as AdhocRequest)]); // runs, cpuThrottling, maxIncrease
 
   const out: AdhocRequest = { ...(r as AdhocRequest), url: url.href };
   if (steps) out.steps = steps;
@@ -338,18 +340,25 @@ async function reopen(page: Page, url: string): Promise<void> {
   if (documentOf(before) === documentOf(url)) await page.reload({ waitUntil: 'load' });
 }
 
+/** Called while a measurement runs, to report how far along it is. */
+export interface AdhocHooks {
+  /** Before each run starts. `run` counts from 1, and the first run is the warm-up. */
+  onRun?: (progress: { run: number; total: number; warmUp: boolean }) => void;
+}
+
 /**
  * Opens the URL in Chromium, measures the steps or the scroll the way `butter.measure()` and
  * `butter.scroll()` do, and compares the result with this label's baseline. The result and
  * the request are saved, so `remeasure()` can run the same check again by its label.
  */
-export async function measureAdhoc(input: AdhocRequest): Promise<AdhocOutcome> {
+export async function measureAdhoc(input: AdhocRequest, hooks: AdhocHooks = {}): Promise<AdhocOutcome> {
   const request = validateRequest(input);
   const dir = resolve(request.dir ?? defaultAdhocDir());
   const use = request.baseline ?? 'compare';
   const label = request.label ?? defaultLabel(request);
   const setup = request.setup ?? [];
-  const touch = request.touch ?? request.scroll?.input === 'touch';
+  // A touch scroll needs a touch-enabled page, whatever `touch` says.
+  const touch = request.touch === true || request.scroll?.input === 'touch';
 
   const browser = await chromium.launch({
     channel: request.channel ?? 'chromium',
@@ -381,7 +390,20 @@ export async function measureAdhoc(input: AdhocRequest): Promise<AdhocOutcome> {
     ]);
     // Ad-hoc baselines are kept in `dir` only; BUTTER_BASELINE_DIR is for the test suite's.
     options.baselineDir = undefined;
-    const ctx: MeasureContext = { page: driver, label, options, environment: await driver.environment() };
+    const ctx: MeasureContext = {
+      page: driver,
+      label,
+      options,
+      environment: await driver.environment(),
+      beforeRun: async (run) => {
+        // Run 0 is the warm-up. A hook that throws mustn't stop the measurement.
+        try {
+          hooks.onRun?.({ run: run + 1, total: options.runs + 1, warmUp: run === 0 });
+        } catch {
+          // ignored
+        }
+      },
+    };
     result = request.scroll
       ? await measureScroll(
           ctx,
@@ -496,13 +518,14 @@ export function findResult(
 export async function remeasure(
   label: string,
   overrides: { dir?: string; baseline?: BaselineUse } = {},
+  hooks: AdhocHooks = {},
 ): Promise<AdhocOutcome> {
   const dir = overrides.dir ?? defaultAdhocDir();
   const recipe = readRecipe(label, dir);
   if (!recipe) {
     return fail(`"${label}" hasn't been measured yet, so there's nothing to run again. Measure it first.`);
   }
-  return measureAdhoc({ ...recipe, dir, baseline: overrides.baseline ?? 'compare' });
+  return measureAdhoc({ ...recipe, dir, baseline: overrides.baseline ?? 'compare' }, hooks);
 }
 
 /** A result's own numbers, one per line, for a result with no baseline to compare with. */
@@ -735,7 +758,7 @@ export function storedOutcome(found: FoundResult, resultFile = ''): AdhocOutcome
  * Where the time went in a result: the functions that used the most CPU (full mode), and the
  * scripts that ran in its long frames (any mode).
  */
-export function formatHotFunctions(result: ButterResult, limit = 10): string {
+export function formatHotFunctions(result: ButterResult, limit = 5): string {
   const lines: string[] = [];
   const hot = result.profile?.hotFunctions.slice(0, limit) ?? [];
   if (hot.length) {

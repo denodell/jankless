@@ -131,7 +131,10 @@ export function parseMeasureArgs(args: string[]): MeasureArgs | null {
     .filter((t) => t.kind === 'option' && (STEP_FLAGS as readonly string[]).includes(t.name))
     .map((t) => stepOf((t as { name: StepFlag }).name, (t as { value?: string }).value ?? ''));
   if (flagged.length && values.steps !== undefined) usage('Give step flags or --steps, not both.');
-  const steps = values.steps !== undefined ? (json(values.steps, 'steps') as Step[]) : flagged;
+  const given = values.steps !== undefined ? json(values.steps, 'steps') : flagged;
+  if (!Array.isArray(given))
+    usage('--steps must be a JSON array, such as \'[{"action":"click","selector":"#open"}]\'.');
+  const steps = given as Step[];
 
   const scrollFlags = ['distance', 'speed', 'input', 'direction'] as const;
   if (values.scroll === undefined) {

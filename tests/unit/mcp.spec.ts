@@ -159,6 +159,13 @@ test("compare_baseline on a test's label returns what the last test run found", 
   });
 });
 
+test('get_hot_functions lists at most the five a result keeps', async () => {
+  writeTestResult();
+  const r = await call('get_hot_functions', { label: 'open filters', limit: 6 });
+  expect(r.isError).toBe(true);
+  expect(r.content[0]!.text).toMatch(/limit/);
+});
+
 test('get_hot_functions reads the last result, as many as asked for', async () => {
   writeTestResult();
   const r = await call('get_hot_functions', { label: 'open filters', limit: 1 });
