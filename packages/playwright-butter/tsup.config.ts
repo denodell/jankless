@@ -11,7 +11,7 @@ const shared: Options = {
 export default defineConfig([
   {
     ...shared,
-    entry: { index: 'src/index.ts', reporter: 'src/reporter.ts' },
+    entry: { index: 'src/index.ts', reporter: 'src/reporter.ts', adhoc: 'src/adhoc.ts' },
     format: ['esm', 'cjs'],
     // tsup's declaration build sets `baseUrl` internally, which TypeScript 6 deprecates.
     dts: { compilerOptions: { ignoreDeprecations: '6.0' } },

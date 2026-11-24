@@ -84,6 +84,17 @@ export const METRICS: MetricDef[] = [
   },
 ];
 
+/**
+ * Whether a check got better by more than it was allowed to get worse: the mirror of `worse`.
+ * A change inside the allowance, in either direction, is too small to tell from noise.
+ */
+export function improved(check: Check): boolean {
+  if (check.status !== 'pass' || check.change === null || check.allowed === null) return false;
+  const complement = METRICS.find((m) => m.metric === check.metric)?.complement ?? false;
+  const betterBy = complement ? check.change : -check.change;
+  return betterBy > check.allowed;
+}
+
 /** Every metric a baseline records: gated or not, so turning a gate on later has data. */
 export function metricsOf(result: ButterResult): BaselineMetrics {
   const out: BaselineMetrics = {};

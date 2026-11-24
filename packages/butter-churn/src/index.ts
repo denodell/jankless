@@ -41,10 +41,19 @@ export {
 
 // Baselines, history and reports.
 export { evaluate, type MatcherOptions } from './baseline/evaluate.js';
-export { compareMetrics } from './baseline/compare.js';
+export { compareMetrics, improved } from './baseline/compare.js';
 export type { BaselineTarget, UpdateMode } from './baseline/store.js';
 export { slug } from './baseline/key.js';
-export { formatMessage, formatSummary, missedBudget } from './baseline/message.js';
+export {
+  describeBudget,
+  describeHotFunction,
+  describeScript,
+  formatChange,
+  formatMessage,
+  formatSummary,
+  formatValue,
+  missedBudget,
+} from './baseline/message.js';
 export { checkBudget, validateBudget } from './baseline/budget.js';
 export { formatBrief, needsBrief, sourcePath, type BriefContext } from './baseline/brief.js';
 export {

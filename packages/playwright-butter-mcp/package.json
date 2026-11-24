@@ -1,0 +1,60 @@
+{
+  "name": "playwright-butter-mcp",
+  "version": "0.0.0",
+  "description": "An MCP server for playwright-butter: a coding agent can check how smooth an interaction or a scroll is on a running page, and whether its change made it better or worse.",
+  "license": "MIT",
+  "author": "Den Odell",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denodell/playwright-butter.git",
+    "directory": "packages/playwright-butter-mcp"
+  },
+  "homepage": "https://github.com/denodell/playwright-butter/tree/main/packages/playwright-butter-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/denodell/playwright-butter/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "playwright",
+    "performance",
+    "jank",
+    "butter"
+  ],
+  "main": "./dist/server.js",
+  "types": "./dist/server.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "playwright-butter-mcp": "dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepack": "node ../../scripts/copy-package-docs.mjs playwright-butter-mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "playwright-butter": "^1.0.0",
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.49.0"
+  }
+}

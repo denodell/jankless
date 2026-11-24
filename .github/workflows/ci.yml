@@ -29,6 +29,9 @@ jobs:
           node --input-type=module -e "const m=await import('playwright-butter'); if (typeof m.test !== 'function') process.exit(1)"
           node -e "const m=require('butter-churn'); if (typeof m.measure !== 'function') process.exit(1)"
           node --input-type=module -e "const m=await import('butter-churn'); if (typeof m.measure !== 'function') process.exit(1)"
+          node -e "const m=require('playwright-butter/adhoc'); if (typeof m.measureAdhoc !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('playwright-butter/adhoc'); if (typeof m.measureAdhoc !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('playwright-butter-mcp'); if (typeof m.createServer !== 'function') process.exit(1)"
       - run: npm run test:unit
 
   integration:
