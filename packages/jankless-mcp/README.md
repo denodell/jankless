@@ -71,7 +71,7 @@ npx jankless-mcp --dir .jankless --results test-results
 | `--results <dir>` | `test-results`                       | Playwright's output directory, so the tools can also look up a check from your test suite. |
 | `--adapter <pkg>` | `chrome-jankless`                    | The browser adapter to measure with. `playwright-jankless` is the other.                   |
 
-Three environment variables choose the Chrome. `JANKLESS_CHROME_PATH` is the path of another Chrome or Chromium to run. `JANKLESS_CHROME_URL` is the address of a Chrome that's already running with remote debugging, such as `http://127.0.0.1:9222`, and the server then measures in a new tab of that Chrome, with its cookies and sign-ins. `JANKLESS_CHROME_ARGS` adds command-line arguments, such as `--no-sandbox` in a container that runs as root.
+Three environment variables choose the Chrome. `JANKLESS_CHROME_PATH` is the path of another Chrome or Chromium to run. `JANKLESS_CHROME_URL` is the address of a Chrome that's already running with remote debugging, such as `http://127.0.0.1:9222`, and the server then measures in a new tab of that Chrome, with its cookies and sign-ins. `JANKLESS_CHROME_ARGS` adds command-line arguments, such as `--no-sandbox` where Chrome's sandbox can't start, as root or in some containers.
 
 With `--adapter playwright-jankless`, the server measures in Playwright's Chromium, as your tests do. That package and `@playwright/test` then have to be installed in the project. Selectors other than CSS differ between the two: Chrome takes Puppeteer's `::-p-text(Save)`, and Playwright takes `text=Save`.
 

@@ -26,11 +26,11 @@ The first run records a baseline, and later runs say whether the page is less sm
 
 ## Choose the Chrome
 
-| Variable               | What it does                                                                                               |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `JANKLESS_CHROME_PATH` | Runs the Chrome or Chromium at this path, in place of the installed Google Chrome.                         |
-| `JANKLESS_CHROME_URL`  | Joins a Chrome that's already running, by its remote debugging address, such as `http://127.0.0.1:9222`.   |
-| `JANKLESS_CHROME_ARGS` | Adds command-line arguments, separated by spaces. A container that runs as root needs `--no-sandbox` here. |
+| Variable               | What it does                                                                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `JANKLESS_CHROME_PATH` | Runs the Chrome or Chromium at this path, in place of the installed Google Chrome.                                                          |
+| `JANKLESS_CHROME_URL`  | Joins a Chrome that's already running, by its remote debugging address, such as `http://127.0.0.1:9222`.                                    |
+| `JANKLESS_CHROME_ARGS` | Adds command-line arguments, separated by spaces. Chrome's sandbox can't start as root or in some containers, and `--no-sandbox` goes here. |
 
 From code, a request's `channel` chooses the installed build: `chrome` (the default), `chrome-beta`, `chrome-dev` or `chrome-canary`.
 

@@ -127,13 +127,11 @@ test('the MCP server records a baseline through the Playwright adapter', async (
   }
 });
 
-// Chrome won't run as root with its sandbox, and some runners run as root.
+// Playwright's Chromium build has no sandbox it can use on a Linux runner.
 const CHROME_ENV = {
   ...(process.env as Record<string, string>),
   JANKLESS_CHROME_PATH: chromium.executablePath(),
-  ...(process.platform === 'linux' && process.getuid?.() === 0
-    ? { JANKLESS_CHROME_ARGS: '--no-sandbox' }
-    : {}),
+  ...(process.platform === 'linux' ? { JANKLESS_CHROME_ARGS: '--no-sandbox' } : {}),
 };
 
 test('npx jankless measure --adapter chrome-jankless measures in Chrome directly', ({ baseURL }) => {

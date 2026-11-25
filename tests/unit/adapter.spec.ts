@@ -70,7 +70,7 @@ test('Chrome that will not start: the sandbox and a missing Chrome each get thei
       'Failed to launch the browser process: Code: 1\n\nstderr:\nRunning as root without --no-sandbox is not supported.',
     ),
   ).toBe(
-    "Couldn't start Chrome: it won't run as root with its sandbox. In a container, set JANKLESS_CHROME_ARGS=--no-sandbox.",
+    "Couldn't start Chrome: its sandbox can't start here. That happens as root, and on Linux for a Chrome with no permission to create user namespaces. If you trust the pages you measure, set JANKLESS_CHROME_ARGS=--no-sandbox.",
   );
   expect(launchFailure("Could not find Google Chrome executable for channel 'chrome'\n  at somewhere")).toBe(
     "Couldn't start Chrome: Could not find Google Chrome executable for channel 'chrome'. chrome-jankless runs the Google Chrome installed on this machine; set JANKLESS_CHROME_PATH to another Chrome or Chromium to use that.",

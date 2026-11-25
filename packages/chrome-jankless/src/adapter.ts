@@ -79,8 +79,23 @@ const documentOf = (url: string) => url.replace(/#.*$/, '');
  */
 async function open(page: Page, url: string): Promise<void> {
   const before = page.url();
-  if (before !== url) await page.goto(url, { waitUntil: 'load' });
+  if (before !== url) await goto(page, url);
   if (documentOf(before) === documentOf(url)) await page.reload({ waitUntil: 'load' });
+}
+
+/**
+ * Goes to the URL, once more if Chrome aborts the first try. A tab that has only just opened
+ * can still be finishing its own blank page, which aborts a navigation started over it (seen
+ * on Windows). The second try starts after that has settled.
+ */
+async function goto(page: Page, url: string): Promise<void> {
+  try {
+    await page.goto(url, { waitUntil: 'load' });
+  } catch (err) {
+    if (!/ERR_ABORTED/.test((err as Error).message)) throw err;
+    await new Promise((r) => setTimeout(r, 250));
+    await page.goto(url, { waitUntil: 'load' });
+  }
 }
 
 function channelOf(channel: string | undefined): Channel {
@@ -123,8 +138,8 @@ async function start(
 
 /** Why Chrome didn't start, with what to do about the two usual causes. */
 export function launchFailure(message: string): string {
-  if (/no-sandbox/.test(message)) {
-    return `Couldn't start Chrome: it won't run as root with its sandbox. In a container, set ${CHROME_ARGS_ENV}=--no-sandbox.`;
+  if (/sandbox/i.test(message)) {
+    return `Couldn't start Chrome: its sandbox can't start here. That happens as root, and on Linux for a Chrome with no permission to create user namespaces. If you trust the pages you measure, set ${CHROME_ARGS_ENV}=--no-sandbox.`;
   }
   const first = message.split('\n')[0]!.trim();
   return `Couldn't start Chrome: ${first}. ${PACKAGE_NAME} runs the Google Chrome installed on this machine; set ${CHROME_PATH_ENV} to another Chrome or Chromium to use that.`;
@@ -137,7 +152,6 @@ export function chromeAdapter(given: ChromeAdapterOptions = {}): Adapter {
     async launch(options): Promise<AdapterBrowser> {
       const { browser, joined } = await start(options, given);
       // A Chrome that was already running is left running: only the tab opened here is closed.
-      const context = joined ? null : browser.defaultBrowserContext();
       const close = async () => {
         if (joined) {
           await page.close().catch(() => undefined);
@@ -148,7 +162,8 @@ export function chromeAdapter(given: ChromeAdapterOptions = {}): Adapter {
       };
       let page: Page;
       try {
-        page = await (context ?? browser).newPage();
+        // A Chrome started here has one blank tab already, and that's the one to use.
+        page = (joined ? undefined : (await browser.pages())[0]) ?? (await browser.newPage());
       } catch (err) {
         await (joined ? browser.disconnect() : browser.close()).catch(() => undefined);
         throw err;

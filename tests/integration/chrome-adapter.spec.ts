@@ -11,8 +11,9 @@ import { chromeAdapter } from '../../packages/chrome-jankless/src/adapter.js';
 
 test.setTimeout(120_000);
 
-// Chrome won't run as root with its sandbox, and CI containers and some runners run as root.
-const args = process.platform === 'linux' && process.getuid?.() === 0 ? ['--no-sandbox'] : [];
+// Playwright's Chromium build has no sandbox it can use on a Linux runner: it isn't installed
+// with the permission an installed Google Chrome has, and it can't run as root either.
+const args = process.platform === 'linux' ? ['--no-sandbox'] : [];
 const executablePath = chromium.executablePath();
 const adapter = chromeAdapter({ executablePath, args });
 
