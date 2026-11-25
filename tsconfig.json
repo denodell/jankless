@@ -2,8 +2,8 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "butter-churn": ["./packages/butter-churn/src/index.ts"],
-      "playwright-butter/adhoc": ["./packages/playwright-butter/src/adhoc.ts"]
+      "jankless": ["./packages/jankless/src/index.ts"],
+      "playwright-jankless/adhoc": ["./packages/playwright-jankless/src/adhoc.ts"]
     }
   },
   "include": ["packages/*/src", "packages/*/tsup.config.ts", "tests", "playwright.config.ts"],

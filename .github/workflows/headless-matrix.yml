@@ -8,7 +8,7 @@ on:
     paths:
       - tests/detection/headless-mode.spec.ts
       - scripts/headless-summary.mjs
-      - packages/butter-churn/src/environment.ts
+      - packages/jankless/src/environment.ts
       - .github/workflows/headless-matrix.yml
   schedule:
     - cron: '0 6 * * 1'
@@ -19,7 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         playwright: ['1.49.0', '1.56.0', '1.57.0', 'latest']
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.56 and 1.57 don't install Chromium on Ubuntu 26.04, which
+    # ubuntu-latest now is.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

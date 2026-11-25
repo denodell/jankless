@@ -1,0 +1,66 @@
+// playwright-jankless/reporter: writes a markdown summary of every jankless result.
+//
+//   reporter: [['list'], ['playwright-jankless/reporter', { outputFile: 'jankless.md' }]]
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
+import { buildMarkdown, forwardSlashes, type ReportEntry, type JanklessResult } from 'jankless';
+import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
+
+export interface JanklessReporterOptions {
+  /** Where to write the markdown. Default: `jankless/summary.md` in the first project's output directory. */
+  outputFile?: string;
+  /** Heading of the summary. Default `Jankless`. */
+  title?: string;
+  /** Also append to the GitHub Actions job summary ($GITHUB_STEP_SUMMARY). Default: true when it's set. */
+  githubSummary?: boolean;
+}
+
+const ATTACHMENT_PREFIX = 'jankless: ';
+
+export default class JanklessReporter implements Reporter {
+  private entries: ReportEntry[] = [];
+  private outputFile = '';
+  private rootDir = process.cwd();
+
+  constructor(private readonly options: JanklessReporterOptions = {}) {}
+
+  onBegin(config: FullConfig): void {
+    this.rootDir = config.rootDir;
+    const outputDir = config.projects[0]?.outputDir ?? join(config.rootDir, 'test-results');
+    this.outputFile = this.options.outputFile
+      ? resolve(this.options.outputFile)
+      : join(outputDir, 'jankless', 'summary.md');
+  }
+
+  onTestEnd(test: TestCase, result: TestResult): void {
+    for (const a of result.attachments) {
+      if (!a.name.startsWith(ATTACHMENT_PREFIX) || !a.path || !existsSync(a.path)) continue;
+      try {
+        const r = JSON.parse(readFileSync(a.path, 'utf8')) as JanklessResult;
+        if (r.schemaVersion !== 1) continue;
+        this.entries.push({
+          test: test.titlePath().slice(3).join(' › ') || test.title,
+          file: forwardSlashes(relative(this.rootDir, test.location.file)),
+          project: test.parent.project()?.name ?? '',
+          result: r,
+        });
+      } catch {
+        // A result file that can't be read is left out; the test's own report still has it.
+      }
+    }
+  }
+
+  onEnd(): void {
+    if (!this.outputFile) return;
+    const md = buildMarkdown(this.entries, this.options.title);
+    mkdirSync(dirname(this.outputFile), { recursive: true });
+    writeFileSync(this.outputFile, md);
+    const summary = process.env.GITHUB_STEP_SUMMARY;
+    if (summary && this.options.githubSummary !== false) appendFileSync(summary, md + '\n');
+    if (this.entries.length) console.log(`Jankless summary: ${relative(process.cwd(), this.outputFile)}`);
+  }
+
+  printsToStdio(): boolean {
+    return false;
+  }
+}

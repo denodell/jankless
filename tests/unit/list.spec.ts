@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { lineCoverage, type CoverageOptions } from '../../packages/butter-churn/src/list/coverage.js';
-import { summarizeList, BLANK_FRAME_SHARE } from '../../packages/butter-churn/src/list/summarize.js';
+import { lineCoverage, type CoverageOptions } from '../../packages/jankless/src/list/coverage.js';
+import { summarizeList, BLANK_FRAME_SHARE } from '../../packages/jankless/src/list/summarize.js';
 import {
   defaultScrollLabel,
   END_CAP_PX,
   resolveScroll,
   scrollDistance,
   SPEEDS,
-} from '../../packages/butter-churn/src/scroll.js';
+} from '../../packages/jankless/src/scroll.js';
 
 const WHITE: [number, number, number] = [255, 255, 255];
 const opts = (o: Partial<CoverageOptions> = {}): CoverageOptions => ({

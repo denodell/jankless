@@ -1,5 +1,5 @@
-// Ad-hoc measurements end to end: a URL and steps, with no butter fixture and no spec for the
-// page. Each one opens its own browser, the way `npx playwright-butter measure` and the MCP
+// Ad-hoc measurements end to end: a URL and steps, with no jankless fixture and no spec for the
+// page. Each one opens its own browser, the way `npx playwright-jankless measure` and the MCP
 // server do.
 import { test, expect } from '@playwright/test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -12,15 +12,15 @@ import {
   readRecipe,
   remeasure,
   type AdhocRequest,
-} from '../../packages/playwright-butter/src/adhoc.js';
-import { main } from '../../packages/playwright-butter/src/cli.js';
-import { createServer } from '../../packages/playwright-butter-mcp/src/server.js';
+} from '../../packages/playwright-jankless/src/adhoc.js';
+import { main } from '../../packages/playwright-jankless/src/cli.js';
+import { createServer } from '../../packages/jankless-mcp/src/server.js';
 
 test.setTimeout(120_000);
 
 let dir: string;
 test.beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'butter-adhoc-'));
+  dir = mkdtempSync(join(tmpdir(), 'jankless-adhoc-'));
 });
 test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -197,7 +197,7 @@ test('a step whose element is missing fails with the selector, and steps that na
   expect(left.text).toContain('Nothing was measured: every run navigated to a new document');
 });
 
-test('npx playwright-butter measure: text, JSON, and the exit code', async ({ baseURL }) => {
+test('npx playwright-jankless measure: text, JSON, and the exit code', async ({ baseURL }) => {
   const run = async (...argv: string[]) => {
     const out: string[] = [];
     const log = console.log;

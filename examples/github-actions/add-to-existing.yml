@@ -1,4 +1,4 @@
-# The playwright-butter steps added to a Playwright workflow you already have. Explained in docs/ci.md.
+# The playwright-jankless steps added to a Playwright workflow you already have. Explained in docs/ci.md.
 #
 # - Pull requests: compared with baselines from main, summary as a comment.
 # - Pushes to main: compared with the previous baselines, then re-recorded and published.
@@ -26,9 +26,9 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - uses: denodell/playwright-butter/setup@v1
+      - uses: denodell/jankless/setup@v1
       - run: npx playwright test
-      - uses: denodell/playwright-butter/report@v1
+      - uses: denodell/jankless/report@v1
         if: always()
 
       - uses: actions/upload-artifact@v4

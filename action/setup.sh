@@ -13,13 +13,13 @@ if [ "$on_default" = true ]; then
 fi
 
 temp="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
-baselines="$temp/butter-baselines"
+baselines="$temp/jankless-baselines"
 mkdir -p "$baselines"
-started="$temp/butter-started"
+started="$temp/jankless-started"
 touch "$started"
 
 results_artifact="${RESULTS_ARTIFACT:-}"
-[ -n "$results_artifact" ] || results_artifact="butter-results-${GITHUB_JOB:-job}-${GITHUB_RUN_ATTEMPT:-1}-$RANDOM$RANDOM"
+[ -n "$results_artifact" ] || results_artifact="jankless-results-${GITHUB_JOB:-job}-${GITHUB_RUN_ATTEMPT:-1}-$RANDOM$RANDOM"
 
 {
   echo "record=$record"
@@ -29,10 +29,10 @@ results_artifact="${RESULTS_ARTIFACT:-}"
 } >> "$GITHUB_OUTPUT"
 
 {
-  echo "BUTTER_BASELINE_DIR=$baselines"
-  echo "BUTTER_ACTION_STARTED=$started"
-  echo "BUTTER_ACTION_ARTIFACT=${ARTIFACT_NAME:-butter-baselines}"
-  if [ "$record" = true ]; then echo "BUTTER_RECORD_BASELINES=1"; fi
+  echo "JANKLESS_BASELINE_DIR=$baselines"
+  echo "JANKLESS_ACTION_STARTED=$started"
+  echo "JANKLESS_ACTION_ARTIFACT=${ARTIFACT_NAME:-jankless-baselines}"
+  if [ "$record" = true ]; then echo "JANKLESS_RECORD_BASELINES=1"; fi
 } >> "$GITHUB_ENV"
 
 if [ "$record" = true ]; then

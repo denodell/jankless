@@ -6,17 +6,17 @@ import { PLAYWRIGHT_CLI } from './helpers.js';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { CheckCalibration } from '../../packages/butter-churn/src/calibrate/analyze.js';
+import type { CheckCalibration } from '../../packages/jankless/src/calibrate/analyze.js';
 
 const CONFIG = 'tests/e2e/fixture-project/playwright.config.ts';
 const built =
-  existsSync('packages/playwright-butter/dist/cli.js') &&
-  existsSync('packages/playwright-butter/dist/reporter.js');
+  existsSync('packages/playwright-jankless/dist/cli.js') &&
+  existsSync('packages/playwright-jankless/dist/reporter.js');
 const clean = () => Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(TEST_|PW_)/.test(k)));
 
 let work: string;
 test.beforeAll(() => {
-  work = mkdtempSync(join(tmpdir(), 'butter-reporter-'));
+  work = mkdtempSync(join(tmpdir(), 'jankless-reporter-'));
 });
 test.afterAll(() => rmSync(work, { recursive: true, force: true }));
 test.describe.configure({ mode: 'serial' });
@@ -33,14 +33,14 @@ test('the reporter writes the markdown summary and the job summary', () => {
       'test',
       '-c',
       CONFIG,
-      `--reporter=list,${join(process.cwd(), 'packages/playwright-butter/dist', 'reporter.js')}`,
+      `--reporter=list,${join(process.cwd(), 'packages/playwright-jankless/dist', 'reporter.js')}`,
     ],
     {
       env: {
         ...clean(),
         CLICK_MS: '60',
-        BUTTER_E2E_OUT: join(work, 'out'),
-        BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
+        JANKLESS_E2E_OUT: join(work, 'out'),
+        JANKLESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
         GITHUB_STEP_SUMMARY: step,
         GITHUB_ACTIONS: '',
       },
@@ -48,12 +48,12 @@ test('the reporter writes the markdown summary and the job summary', () => {
     },
   );
   expect(child.status, child.stdout + child.stderr).toBe(0);
-  const md = readFileSync(join(work, 'out', 'butter', 'summary.md'), 'utf8');
-  expect(md).toContain('## Butter');
+  const md = readFileSync(join(work, 'out', 'jankless', 'summary.md'), 'utf8');
+  expect(md).toContain('## Jankless');
   expect(md).toContain('1 new baseline');
   expect(md).toContain('checkout click › "checkout": new baseline recorded');
   expect(readFileSync(step, 'utf8')).toBe(md + '\n');
-  expect(child.stdout).toContain('Butter summary:');
+  expect(child.stdout).toContain('Jankless summary:');
 });
 
 test('the summary command writes the same summary from the result files alone', () => {
@@ -63,7 +63,7 @@ test('the summary command writes the same summary from the result files alone', 
   const child = spawnSync(
     process.execPath,
     [
-      'packages/playwright-butter/dist/cli.js',
+      'packages/playwright-jankless/dist/cli.js',
       'summary',
       '--results',
       join(work, 'out'),
@@ -74,10 +74,10 @@ test('the summary command writes the same summary from the result files alone', 
     { env: { ...clean(), GITHUB_STEP_SUMMARY: step }, encoding: 'utf8' },
   );
   expect(child.status, child.stdout + child.stderr).toBe(0);
-  const fromReporter = readFileSync(join(work, 'out', 'butter', 'summary.md'), 'utf8');
+  const fromReporter = readFileSync(join(work, 'out', 'jankless', 'summary.md'), 'utf8');
   expect(readFileSync(out, 'utf8')).toBe(fromReporter);
   expect(readFileSync(step, 'utf8')).toBe(fromReporter + '\n');
-  expect(child.stdout).toContain('Butter summary of 1 result(s)');
+  expect(child.stdout).toContain('Jankless summary of 1 result(s)');
 });
 
 test('a check that got worse writes a fix brief, and the brief command collects it', () => {
@@ -87,8 +87,8 @@ test('a check that got worse writes a fix brief, and the brief command collects 
     env: {
       ...clean(),
       CLICK_MS: '300',
-      BUTTER_E2E_OUT: out,
-      BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      JANKLESS_E2E_OUT: out,
+      JANKLESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
       GITHUB_ACTIONS: '',
     },
     encoding: 'utf8',
@@ -96,7 +96,7 @@ test('a check that got worse writes a fix brief, and the brief command collects 
   expect(run.status, run.stdout + run.stderr).toBe(0);
   const child = spawnSync(
     process.execPath,
-    ['packages/playwright-butter/dist/cli.js', 'brief', '--results', out],
+    ['packages/playwright-jankless/dist/cli.js', 'brief', '--results', out],
     { env: clean(), encoding: 'utf8' },
   );
   expect(child.status, child.stderr).toBe(0);
@@ -112,7 +112,7 @@ test('calibrate is repeatable', () => {
     const child = spawnSync(
       process.execPath,
       [
-        'packages/playwright-butter/dist/cli.js',
+        'packages/playwright-jankless/dist/cli.js',
         'calibrate',
         '--runs',
         '3',
@@ -123,7 +123,7 @@ test('calibrate is repeatable', () => {
         CONFIG,
       ],
       {
-        env: { ...clean(), CLICK_MS: '60', BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots-cal') },
+        env: { ...clean(), CLICK_MS: '60', JANKLESS_E2E_SNAPSHOTS: join(work, 'snapshots-cal') },
         encoding: 'utf8',
       },
     );

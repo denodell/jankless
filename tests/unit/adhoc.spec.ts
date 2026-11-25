@@ -18,15 +18,15 @@ import {
   validateRequest,
   type AdhocOutcome,
   type Verdict,
-} from '../../packages/playwright-butter/src/adhoc.js';
-import { compareMetrics, improved, metricsOf } from '../../packages/butter-churn/src/baseline/compare.js';
-import { resultPath } from '../../packages/butter-churn/src/output.js';
-import type { ButterResult, Comparison } from '../../packages/butter-churn/src/types.js';
+} from '../../packages/playwright-jankless/src/adhoc.js';
+import { compareMetrics, improved, metricsOf } from '../../packages/jankless/src/baseline/compare.js';
+import { resultPath } from '../../packages/jankless/src/output.js';
+import type { JanklessResult, Comparison } from '../../packages/jankless/src/types.js';
 import { makeResult } from './result-factory.js';
 
 let dir: string;
 test.beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'butter-adhoc-'));
+  dir = mkdtempSync(join(tmpdir(), 'jankless-adhoc-'));
 });
 test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -132,7 +132,7 @@ test('the port is left out, so a dev server on another port keeps its baseline',
 test('files go in the nearest node_modules, which dev servers do not watch', () => {
   mkdirSync(join(dir, 'node_modules'));
   mkdirSync(join(dir, 'apps', 'web'), { recursive: true });
-  const expected = join(dir, 'node_modules', '.cache', 'playwright-butter', 'adhoc');
+  const expected = join(dir, 'node_modules', '.cache', 'playwright-jankless', 'adhoc');
   expect(defaultAdhocDir(dir)).toBe(expected);
   expect(defaultAdhocDir(join(dir, 'apps', 'web'))).toBe(expected);
 });
@@ -141,19 +141,19 @@ test('with no node_modules, files go in the temporary folder, one folder per pro
   mkdirSync(join(dir, 'a', '.git'), { recursive: true });
   mkdirSync(join(dir, 'b', '.git'), { recursive: true });
   const a = defaultAdhocDir(join(dir, 'a'));
-  expect(a.startsWith(join(tmpdir(), 'playwright-butter-adhoc'))).toBe(true);
+  expect(a.startsWith(join(tmpdir(), 'playwright-jankless-adhoc'))).toBe(true);
   expect(defaultAdhocDir(join(dir, 'a'))).toBe(a);
   expect(defaultAdhocDir(join(dir, 'b'))).not.toBe(a);
 });
 
-function store(result: ButterResult, recipe?: object) {
+function store(result: JanklessResult, recipe?: object) {
   const path = resultPath(join(dir, 'results'), result.label);
   mkdirSync(join(dir, 'results'), { recursive: true });
   writeFileSync(path, JSON.stringify(result));
   if (recipe) {
     writeFileSync(
       path.replace(/\.json$/, '.recipe.json'),
-      JSON.stringify({ schemaVersion: 1, kind: 'playwright-butter-recipe', request: recipe }),
+      JSON.stringify({ schemaVersion: 1, kind: 'playwright-jankless-recipe', request: recipe }),
     );
   }
 }
@@ -172,7 +172,7 @@ test('a label finds its last result and its recipe', () => {
 
 test('a label falls back to the last Playwright run, by label or by test title', () => {
   const results = join(dir, 'test-results');
-  const folder = join(results, 'butter', 'filters-open-1234abcd');
+  const folder = join(results, 'jankless', 'filters-open-1234abcd');
   mkdirSync(folder, { recursive: true });
   const fromTest = makeResult({
     label: 'open filters',
@@ -193,7 +193,7 @@ test('a label falls back to the last Playwright run, by label or by test title',
 
 // ---- wording ----
 
-function compared(now: ButterResult, before: ButterResult): Comparison {
+function compared(now: JanklessResult, before: JanklessResult): Comparison {
   const checks = compareMetrics(now, metricsOf(before), now.settings.maxIncrease);
   return {
     status: checks.some((c) => c.status === 'worse') ? 'warn' : 'pass',
@@ -204,7 +204,7 @@ function compared(now: ButterResult, before: ButterResult): Comparison {
 }
 
 function outcome(
-  result: ButterResult,
+  result: JanklessResult,
   comparison: Comparison | null,
   verdict: Verdict,
 ): Omit<AdhocOutcome, 'text'> {
@@ -216,7 +216,7 @@ test('improved() is the mirror of worse', () => {
     mode: 'full',
     frames: { total: 100, onTime: 80, dropped: 20, onTimePercent: 80 },
   });
-  const check = (now: ButterResult, metric: string) =>
+  const check = (now: JanklessResult, metric: string) =>
     compareMetrics(now, metricsOf(before), 0.15).find((c) => c.metric === metric)!;
 
   const faster = makeResult({ input: { p95ToPaintMs: 64 } });
@@ -364,7 +364,7 @@ test('a result or a recipe that cannot be read counts as never measured', () => 
   const path = resultPath(join(dir, 'results'), 'half written');
   mkdirSync(join(dir, 'results'), { recursive: true });
   writeFileSync(path, '{"schemaVersion": 1, "label": "half wr');
-  writeFileSync(path.replace(/\.json$/, '.recipe.json'), '{"kind": "playwright-butter-rec');
+  writeFileSync(path.replace(/\.json$/, '.recipe.json'), '{"kind": "playwright-jankless-rec');
   expect(readLastResult('half written', dir)).toBeNull();
   expect(readRecipe('half written', dir)).toBeNull();
   expect(listLabels(dir)).toEqual([]);

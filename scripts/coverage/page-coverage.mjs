@@ -18,8 +18,8 @@ if (out) {
 let written = 0;
 
 async function collect(page) {
-  if (!page.__butterCoverage) return;
-  page.__butterCoverage = false;
+  if (!page.__janklessCoverage) return;
+  page.__janklessCoverage = false;
   let entries;
   try {
     entries = await page.coverage.stopJSCoverage();
@@ -35,12 +35,12 @@ async function collect(page) {
 }
 
 async function start(page) {
-  if (page.__butterCoverage !== undefined || !page.coverage) return;
-  page.__butterCoverage = true;
+  if (page.__janklessCoverage !== undefined || !page.coverage) return;
+  page.__janklessCoverage = true;
   try {
     await page.coverage.startJSCoverage({ resetOnNavigation: false, reportAnonymousScripts: true });
   } catch {
-    page.__butterCoverage = false;
+    page.__janklessCoverage = false;
   }
 }
 

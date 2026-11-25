@@ -9,13 +9,13 @@ import {
   outsideRecentRange,
   readHistory,
   specHash,
-} from '../../packages/butter-churn/src/auto/history.js';
+} from '../../packages/jankless/src/auto/history.js';
 import {
   analyzeDocs,
   defaultHistoryDir,
   type DocData,
-} from '../../packages/playwright-butter/src/withButter.js';
-import { onMainBranch } from '../../packages/butter-churn/src/ci.js';
+} from '../../packages/playwright-jankless/src/withJankless.js';
+import { onMainBranch } from '../../packages/jankless/src/ci.js';
 import { makeResult } from './result-factory.js';
 
 test('medianMetrics skips unmeasured runs', () => {
@@ -68,33 +68,33 @@ test("outsideRecentRange: worse than the median only counts outside the test's o
 });
 
 test("the default history folder: the project's nearest node_modules, else next to the config", () => {
-  const root = mkdtempSync(join(tmpdir(), 'butter-project-'));
+  const root = mkdtempSync(join(tmpdir(), 'jankless-project-'));
   const at = (...p: string[]) => join(root, ...p);
   const make = (...p: string[]) => mkdirSync(at(...p), { recursive: true });
   try {
     make('app', 'node_modules');
     writeFileSync(at('app', 'package-lock.json'), '{}');
     expect(defaultHistoryDir(at('app'))).toEqual({
-      dir: at('app', 'node_modules', '.cache', 'playwright-butter', 'history'),
+      dir: at('app', 'node_modules', '.cache', 'playwright-jankless', 'history'),
       watched: false,
     });
     make('mono', 'node_modules');
     make('mono', 'packages', 'web');
     writeFileSync(at('mono', 'package-lock.json'), '{}');
     expect(defaultHistoryDir(at('mono', 'packages', 'web')).dir).toBe(
-      at('mono', 'node_modules', '.cache', 'playwright-butter', 'history'),
+      at('mono', 'node_modules', '.cache', 'playwright-jankless', 'history'),
     );
     make('node_modules');
     make('pnp');
     writeFileSync(at('pnp', 'yarn.lock'), '');
-    expect(defaultHistoryDir(at('pnp'))).toEqual({ dir: at('pnp', 'butter-history'), watched: true });
+    expect(defaultHistoryDir(at('pnp'))).toEqual({ dir: at('pnp', 'jankless-history'), watched: true });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
 test('history files', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'butter-history-'));
+  const dir = mkdtempSync(join(tmpdir(), 'jankless-history-'));
   try {
     const result = makeResult();
     const path = historyPath(dir, 'tests/app.spec.ts', 'buy › then search', 'chromium', result);
@@ -115,7 +115,7 @@ test('history files', () => {
     expect(file.entries[1]!.metrics['input.p95ToPaintMs']).toBe(999);
     expect(readHistory(path)).toEqual(file);
     writeFileSync(path, '{"kind":"other"}');
-    expect(readHistory(path)).toMatch(/isn't a playwright-butter history file/);
+    expect(readHistory(path)).toMatch(/isn't a playwright-jankless history file/);
     writeFileSync(path, 'not json');
     expect(readHistory(path)).toMatch(/couldn't be read: SyntaxError/);
     expect(readHistory(join(dir, 'missing.json'))).toBeNull();
@@ -125,7 +125,7 @@ test('history files', () => {
 });
 
 test('specHash changes when the file changes', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'butter-spec-'));
+  const dir = mkdtempSync(join(tmpdir(), 'jankless-spec-'));
   try {
     const f = join(dir, 'a.spec.ts');
     writeFileSync(f, 'test(1)');

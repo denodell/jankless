@@ -1,7 +1,7 @@
-// npx playwright-butter measure: its arguments and exit code. The measuring is in tests/integration.
+// npx playwright-jankless measure: its arguments and exit code. The measuring is in tests/integration.
 import { test, expect } from '@playwright/test';
-import { main } from '../../packages/playwright-butter/src/cli.js';
-import { exitCodeOf, parseMeasureArgs } from '../../packages/playwright-butter/src/measure-command.js';
+import { main } from '../../packages/playwright-jankless/src/cli.js';
+import { exitCodeOf, parseMeasureArgs } from '../../packages/playwright-jankless/src/measure-command.js';
 
 const URL = 'http://localhost:5173/products';
 
@@ -107,7 +107,7 @@ test('the other options', () => {
     '--budget',
     '{"maxLongFrames":0}',
     '--dir',
-    '.butter',
+    '.jankless',
     '--headed',
     '--json',
     '--enforce',
@@ -124,7 +124,7 @@ test('the other options', () => {
       cpuThrottling: 6,
       maxIncrease: 0.25,
       budget: { maxLongFrames: 0 },
-      dir: '.butter',
+      dir: '.jankless',
       headed: true,
     },
     json: true,
@@ -167,7 +167,7 @@ test('--help prints the usage and succeeds', async () => {
   expect(parseMeasureArgs(['--help'])).toBeNull();
   const r = await cli('measure', '--help');
   expect(r.code).toBe(0);
-  expect(r.out).toContain('Usage: npx playwright-butter measure <url> [steps] [options]');
+  expect(r.out).toContain('Usage: npx playwright-jankless measure <url> [steps] [options]');
   expect((await cli('--help')).out).toContain('measure     Measure an interaction or a scroll');
 });
 
@@ -175,7 +175,7 @@ test('a mistake fails with the message and where to find the options, and opens 
   const none = await cli('measure', URL);
   expect(none.code).toBe(1);
   expect(none.err).toContain('Give the steps to measure');
-  expect(none.err).toContain('Run npx playwright-butter measure --help for the options.');
+  expect(none.err).toContain('Run npx playwright-jankless measure --help for the options.');
 
   const badUrl = await cli('measure', 'products', '--click', '#a');
   expect(badUrl.code).toBe(1);

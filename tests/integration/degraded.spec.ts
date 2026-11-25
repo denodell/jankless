@@ -11,10 +11,10 @@ import {
   type CdpSession,
   type PageDriver,
   type ScratchPage,
-  type ButterOptions,
+  type JanklessOptions,
   type Tracer,
-} from '../../packages/butter-churn/src/index.js';
-import { locatorTarget, playwrightDriver } from '../../packages/playwright-butter/src/driver.js';
+} from '../../packages/jankless/src/index.js';
+import { locatorTarget, playwrightDriver } from '../../packages/playwright-jankless/src/driver.js';
 
 test.setTimeout(120_000);
 
@@ -26,7 +26,7 @@ async function setUp(page: Page, url: string, change: (d: PageDriver) => Partial
   return driver;
 }
 
-async function context(driver: PageDriver, label: string, options: ButterOptions) {
+async function context(driver: PageDriver, label: string, options: JanklessOptions) {
   return {
     page: driver,
     label,

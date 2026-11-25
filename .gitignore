@@ -2,7 +2,7 @@ node_modules/
 dist/
 # Copied in by each package's prepack script.
 packages/*/LICENSE
-packages/playwright-butter/README.md
+packages/playwright-jankless/README.md
 test-results/
 playwright-report/
 blob-report/

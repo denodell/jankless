@@ -1,4 +1,4 @@
-// The MCP server as an agent starts it: the built `playwright-butter-mcp` command, talking over
+// The MCP server as an agent starts it: the built `jankless-mcp` command, talking over
 // standard input and output. Needs `npm run build` first.
 import { test, expect } from '@playwright/test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -8,20 +8,20 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const BIN = resolve('packages', 'playwright-butter-mcp', 'dist', 'bin.js');
+const BIN = resolve('packages', 'jankless-mcp', 'dist', 'bin.js');
 const built = existsSync(BIN);
 
 test('--help describes the command and starts no server', () => {
   test.skip(!built, 'dist/ not built; run npm run build');
   const child = spawnSync(process.execPath, [BIN, '--help'], { encoding: 'utf8', timeout: 30_000 });
   expect(child.status).toBe(0);
-  expect(child.stdout).toContain('Usage: npx playwright-butter-mcp [options]');
+  expect(child.stdout).toContain('Usage: npx jankless-mcp [options]');
   expect(child.stdout).toContain('--dir <folder>');
 });
 
 test('over standard input and output: its name, its version and its three tools', async () => {
   test.skip(!built, 'dist/ not built; run npm run build');
-  const dir = mkdtempSync(join(tmpdir(), 'butter-mcp-bin-'));
+  const dir = mkdtempSync(join(tmpdir(), 'jankless-mcp-bin-'));
   const client = new Client({ name: 'test', version: '0' });
   try {
     await client.connect(
@@ -32,9 +32,9 @@ test('over standard input and output: its name, its version and its three tools'
       }),
     );
     const { version } = JSON.parse(
-      readFileSync(resolve('packages', 'playwright-butter-mcp', 'package.json'), 'utf8'),
+      readFileSync(resolve('packages', 'jankless-mcp', 'package.json'), 'utf8'),
     ) as { version: string };
-    expect(client.getServerVersion()).toMatchObject({ name: 'playwright-butter', version });
+    expect(client.getServerVersion()).toMatchObject({ name: 'playwright-jankless', version });
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       'compare_baseline',

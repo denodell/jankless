@@ -3,28 +3,28 @@ import type { BrowserContext, Page } from '@playwright/test';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, expect, withButter } from '../../packages/playwright-butter/src/index.js';
-import type { ButterResult } from '../../packages/butter-churn/src/types.js';
+import { test, expect, withJankless } from '../../packages/playwright-jankless/src/index.js';
+import type { JanklessResult } from '../../packages/jankless/src/types.js';
 
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(120_000);
 
-const history = mkdtempSync(join(tmpdir(), 'butter-fixture-edges-'));
+const history = mkdtempSync(join(tmpdir(), 'jankless-fixture-edges-'));
 test.afterAll(() => rmSync(history, { recursive: true, force: true }));
 
-function resultsLabelled(label: string): ButterResult[] {
-  const out: ButterResult[] = [];
+function resultsLabelled(label: string): JanklessResult[] {
+  const out: JanklessResult[] = [];
   const walk = (dir: string) => {
     for (const f of readdirSync(dir)) {
       const p = join(dir, f);
       if (statSync(p).isDirectory()) walk(p);
       else if (p.endsWith('.json')) {
-        const r = JSON.parse(readFileSync(p, 'utf8')) as ButterResult;
+        const r = JSON.parse(readFileSync(p, 'utf8')) as JanklessResult;
         if (r.label === label) out.push(r);
       }
     }
   };
-  walk(join(test.info().project.outputDir, 'butter'));
+  walk(join(test.info().project.outputDir, 'jankless'));
   return out;
 }
 
@@ -36,11 +36,11 @@ const shell = test.extend<{ page: Page }>({
   },
 });
 
-shell("Chromium's headless shell gets a warning", async ({ page, butter }) => {
+shell("Chromium's headless shell gets a warning", async ({ page, jankless }) => {
   await page.goto('/click.html?ms=20');
-  await butter.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
+  await jankless.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
   expect(test.info().annotations).toContainEqual({
-    type: 'butter-warning',
+    type: 'jankless-warning',
     description: expect.stringContaining("Running in Chromium's headless shell"),
   });
 });
@@ -56,9 +56,9 @@ const noCdp = test.extend<{ page: Page }>({
   },
 });
 
-noCdp("a browser that won't say which headless mode it is gets no warning", async ({ butter }) => {
-  void butter;
-  expect(test.info().annotations.map((a) => a.type)).not.toContain('butter-warning');
+noCdp("a browser that won't say which headless mode it is gets no warning", async ({ jankless }) => {
+  void jankless;
+  expect(test.info().annotations.map((a) => a.type)).not.toContain('jankless-warning');
 });
 
 const noBrowser = test.extend<{ page: Page }>({
@@ -70,34 +70,34 @@ const noBrowser = test.extend<{ page: Page }>({
   },
 });
 
-noBrowser('a context with no Browser is not measured or compared', async ({ page, butter }) => {
+noBrowser('a context with no Browser is not measured or compared', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=20');
-  const r = await butter.measure('click', () => page.click('#heavy'));
+  const r = await jankless.measure('click', () => page.click('#heavy'));
   expect(r.runs).toBe(0);
-  expect(r.unavailable[0]!.reason).toBe('playwright-butter measures in Chromium only; this is unknown');
+  expect(r.unavailable[0]!.reason).toBe('playwright-jankless measures in Chromium only; this is unknown');
   expect(r).toBeSmooth();
   expect(test.info().annotations.map((a) => a.type)).toEqual(
-    expect.arrayContaining(['butter-skipped', 'butter-not-compared']),
+    expect.arrayContaining(['jankless-skipped', 'jankless-not-compared']),
   );
 });
 
-test('a label used twice in one test throws', async ({ page, butter }) => {
+test('a label used twice in one test throws', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=0');
-  await butter.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
-  await expect(butter.measure('click', () => page.click('#heavy'))).rejects.toThrow(
+  await jankless.measure('click', () => page.click('#heavy'), { runs: 1, cpuThrottling: 1 });
+  await expect(jankless.measure('click', () => page.click('#heavy'))).rejects.toThrow(
     'the label "click" is already used in this test',
   );
 });
 
 test('toBeSmooth() needs a result, and has no .not', () => {
-  expect(() => expect({} as ButterResult).toBeSmooth()).toThrow(/expects a result from butter/);
-  expect(() => expect({} as ButterResult).not.toBeSmooth()).toThrow(/not\.toBeSmooth\(\) is not supported/);
+  expect(() => expect({} as JanklessResult).toBeSmooth()).toThrow(/expects a result from jankless/);
+  expect(() => expect({} as JanklessResult).not.toBeSmooth()).toThrow(/not\.toBeSmooth\(\) is not supported/);
 });
 
-const preexposed = withButter(
+const preexposed = withJankless(
   base.extend<{ context: BrowserContext }>({
     context: async ({ context }, use) => {
-      await context.exposeBinding('__playwrightButterStream', () => undefined);
+      await context.exposeBinding('__janklessStream', () => undefined);
       await use(context);
     },
   }),
@@ -106,13 +106,13 @@ const preexposed = withButter(
 
 preexposed("automatic mode that can't start says so", async ({ page }) => {
   expect(test.info().annotations).toContainEqual({
-    type: 'butter-warning',
+    type: 'jankless-warning',
     description: expect.stringContaining("automatic mode couldn't start"),
   });
   await page.goto('/click.html?ms=0');
 });
 
-const autoWithoutBrowser = withButter(
+const autoWithoutBrowser = withJankless(
   base.extend<{ context: BrowserContext }>({
     context: async ({ context }, use) => {
       context.browser = () => null;
@@ -124,13 +124,13 @@ const autoWithoutBrowser = withButter(
 
 autoWithoutBrowser('automatic mode skips a context with no Browser', async ({ page }) => {
   expect(test.info().annotations).toContainEqual({
-    type: 'butter-skipped',
+    type: 'jankless-skipped',
     description: 'automatic mode measures Chromium only; this is unknown',
   });
   await page.goto('/click.html?ms=0');
 });
 
-const auto = withButter(base, { auto: true, record: false, historyDir: history });
+const auto = withJankless(base, { auto: true, record: false, historyDir: history });
 const BROKEN = 'a page that breaks the collector, with a missing source map';
 
 auto(BROKEN, async ({ page }) => {
@@ -176,9 +176,9 @@ test.afterAll(({ browser }) => {
   if (newContext) browser.newContext = newContext as typeof browser.newContext;
 });
 
-test('a replay that has no page to render in', async ({ page, butter, browser }) => {
+test('a replay that has no page to render in', async ({ page, jankless, browser }) => {
   await page.goto('/list.html?cost=15&overscan=0');
-  await butter.scroll(page.locator('#list'), {
+  await jankless.scroll(page.locator('#list'), {
     label: 'replay without a page',
     distance: 2000,
     speed: 'fast',

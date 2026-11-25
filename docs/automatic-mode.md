@@ -5,13 +5,13 @@ Automatic mode measures every test you already have, with one change to your fix
 ```ts
 // tests/fixtures.ts
 import { test as base } from '@playwright/test';
-import { withButter } from 'playwright-butter';
+import { withJankless } from 'playwright-jankless';
 
-export const test = withButter(base, { auto: true });
+export const test = withJankless(base, { auto: true });
 export { expect } from '@playwright/test';
 ```
 
-Tests that import `test` from this file get `butter` and `butterOptions` too, for explicit `measure()` and `scroll()` calls.
+Tests that import `test` from this file get `jankless` and `janklessOptions` too, for explicit `measure()` and `scroll()` calls.
 
 ## What's measured
 
@@ -19,20 +19,20 @@ Each test that opens a page is measured once, for its whole run, with no warm-up
 
 - `auto.interactions` lists each click, tap or key press with its element and input-to-paint time (`click on button#checkout: 180ms`), in order, across every page and navigation. `input.byTarget` summarizes them per element.
 - Long frames caused by those interactions are listed with the scripts responsible, as in `measure()`. Work an interaction starts up to a second later, in a timer or after a fetch, is included. Frames from page loads and background timers are left out.
-- The result is written to `test-results/butter/<test>/auto.json` and attached as `butter: auto`, so the [reporter](../README.md#reporter) includes it.
+- The result is written to `test-results/jankless/<test>/auto.json` and attached as `jankless: auto`, so the [reporter](../README.md#reporter) includes it.
 
 Tests that never open a page, such as API tests, produce no result.
 
-CPU throttling is off by default in automatic mode (`cpuThrottling: 1`), because slowing every test 4x would slow the whole suite and could break its timeouts. If the suite can take it, `withButter(base, { auto: true, cpuThrottling: 4 })` turns it on.
+CPU throttling is off by default in automatic mode (`cpuThrottling: 1`), because slowing every test 4x would slow the whole suite and could break its timeouts. If the suite can take it, `withJankless(base, { auto: true, cpuThrottling: 4 })` turns it on.
 
 ## Rolling history from main
 
 Each test's baseline is the median of its last 10 passing runs on the main branch (`history`). A run is compared once the history has at least 3 runs (`minHistory`). Until then, the result says "building history".
 
-- Runs are recorded on push builds of the main (or master) branch in CI. GitHub Actions, GitLab CI, Azure Pipelines and CircleCI are detected. `record: true` or `BUTTER_RECORD=1` forces recording, and `record: false` turns it off. Pull requests only compare, so they never change main's history.
+- Runs are recorded on push builds of the main (or master) branch in CI. GitHub Actions, GitLab CI, Azure Pipelines and CircleCI are detected. `record: true` or `JANKLESS_RECORD=1` forces recording, and `record: false` turns it off. Pull requests only compare, so they never change main's history.
 - Only runs where the test itself passed are recorded.
 - Histories are keyed by test, project, platform, CPU model and CPU throttling, like `measure()` baselines, because hosted runners differ in speed ([measurements.md](measurements.md)).
-- Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `.cache/playwright-butter/history` in your project's `node_modules`: the nearest one from your Playwright config up to the project root, so a workspace package whose dependencies are hoisted uses the root's. Histories are rewritten while other tests are running, and a dev server that watches your project reloads its pages when a file it watches changes. Dev servers don't watch `node_modules`, so the default stays out of their way. A project with no `node_modules`, as with Yarn Plug'n'Play, keeps them in `butter-history` next to the config instead, and the result notes it. That folder, or a `historyDir` or `baselineDir` elsewhere in the project, needs adding to the dev server's ignored files, such as Vite's `server.watch.ignored`.
+- Files live in `historyDir`. By default that's `baselineDir` if you set one, and otherwise `.cache/playwright-jankless/history` in your project's `node_modules`: the nearest one from your Playwright config up to the project root, so a workspace package whose dependencies are hoisted uses the root's. Histories are rewritten while other tests are running, and a dev server that watches your project reloads its pages when a file it watches changes. Dev servers don't watch `node_modules`, so the default stays out of their way. A project with no `node_modules`, as with Yarn Plug'n'Play, keeps them in `jankless-history` next to the config instead, and the result notes it. That folder, or a `historyDir` or `baselineDir` elsewhere in the project, needs adding to the dev server's ignored files, such as Vite's `server.watch.ignored`.
 
 ### When a run warns
 
@@ -49,7 +49,7 @@ The test it missed runs the delay twice, and its input-to-paint and long frames 
 
 ### Changed spec files
 
-When a spec file changes, the histories of the tests in it start again instead of failing, since the tests may now do different things. The whole spec file is hashed, so editing one test resets its neighbors too, which is conservative but simple. The result notes the reset, and the test gets a `butter-baseline-reset` annotation.
+When a spec file changes, the histories of the tests in it start again instead of failing, since the tests may now do different things. The whole spec file is hashed, so editing one test resets its neighbors too, which is conservative but simple. The result notes the reset, and the test gets a `jankless-baseline-reset` annotation.
 
 ## Keep the history in CI
 
@@ -59,10 +59,10 @@ The [GitHub Action](ci.md#the-github-action) keeps the history for you, with the
 - uses: dawidd6/action-download-artifact@v6
   continue-on-error: true # the first run has no history yet
   with:
-    workflow: butter.yml
+    workflow: jankless.yml
     branch: main
-    name: butter-history
-    path: node_modules/.cache/playwright-butter/history
+    name: jankless-history
+    path: node_modules/.cache/playwright-jankless/history
 
 - run: npx playwright test # records on main, compares on pull requests
 
@@ -70,8 +70,8 @@ The [GitHub Action](ci.md#the-github-action) keeps the history for you, with the
   if: github.ref == 'refs/heads/main'
   uses: actions/upload-artifact@v4
   with:
-    name: butter-history
-    path: node_modules/.cache/playwright-butter/history
+    name: jankless-history
+    path: node_modules/.cache/playwright-jankless/history
     retention-days: 90
 ```
 

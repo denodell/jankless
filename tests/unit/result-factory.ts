@@ -1,4 +1,4 @@
-import type { ButterResult } from '../../packages/butter-churn/src/types.js';
+import type { JanklessResult } from '../../packages/jankless/src/types.js';
 
 type DeepPartial<T> = {
   [K in keyof T]?: NonNullable<T[K]> extends unknown[]
@@ -9,8 +9,8 @@ type DeepPartial<T> = {
 };
 
 /** A realistic quick-mode result, with overrides. */
-export function makeResult(overrides: DeepPartial<ButterResult> = {}): ButterResult {
-  const base: ButterResult = {
+export function makeResult(overrides: DeepPartial<JanklessResult> = {}): JanklessResult {
+  const base: JanklessResult = {
     schemaVersion: 1,
     label: 'open filters',
     mode: 'quick',
@@ -59,7 +59,7 @@ export function makeResult(overrides: DeepPartial<ButterResult> = {}): ButterRes
     unavailable: [],
     notes: [],
   };
-  return merge(base, overrides) as ButterResult;
+  return merge(base, overrides) as JanklessResult;
 }
 
 function merge(a: unknown, b: unknown): unknown {

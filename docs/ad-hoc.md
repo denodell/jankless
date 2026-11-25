@@ -1,13 +1,13 @@
 # Measure without a test
 
-`butter.measure()` and `butter.scroll()` need a spec file. While you're working on a page, it's often quicker to measure it directly: give playwright-butter the URL and what to do there, and it opens the page in Chromium, measures it the same way a test would, and compares the result with the last baseline for that check. You can do that from the command line, from a coding agent through the MCP server, or from your own script.
+`jankless.measure()` and `jankless.scroll()` need a spec file. While you're working on a page, it's often quicker to measure it directly: give playwright-jankless the URL and what to do there, and it opens the page in Chromium, measures it the same way a test would, and compares the result with the last baseline for that check. You can do that from the command line, from a coding agent through the MCP server, or from your own script.
 
 The page has to be running already, on a dev server or a preview build. A production build gives the most useful results, for the reason in the README's [limitations](../README.md#limitations): a development build is often busy for the whole interaction with the CPU slowed 4x, so extra work doesn't show.
 
 ## Measure from the command line
 
 ```bash
-npx playwright-butter measure http://localhost:5173/products --click "#filters"
+npx playwright-jankless measure http://localhost:5173/products --click "#filters"
 ```
 
 ```
@@ -43,7 +43,7 @@ The steps are measured in the order you give them:
 | `--steps <json>`     | The same steps as JSON, which also lets a `type` step name the element to type in. |
 
 ```bash
-npx playwright-butter measure http://localhost:5173/search \
+npx playwright-jankless measure http://localhost:5173/search \
   --click "#search" --type "trail shoes" --press Enter
 ```
 
@@ -52,17 +52,17 @@ A selector is a CSS selector or any other [Playwright selector](https://playwrig
 `--setup` takes steps as JSON that run after each page load and before the measurement starts. That's where to open the dialog or the tab you want to measure inside, so that opening it isn't counted:
 
 ```bash
-npx playwright-butter measure http://localhost:5173/board \
+npx playwright-jankless measure http://localhost:5173/board \
   --setup '[{"action":"click","selector":"#open-settings"}]' \
   --click "#sort-by-date"
 ```
 
 ### Scroll
 
-`--scroll` measures a scroll in place of steps, with the same options as `butter.scroll()`. The selector is the element that scrolls, or `html` for the page itself:
+`--scroll` measures a scroll in place of steps, with the same options as `jankless.scroll()`. The selector is the element that scrolls, or `html` for the page itself:
 
 ```bash
-npx playwright-butter measure http://localhost:5173/feed --scroll "#feed" --speed fast --mode full
+npx playwright-jankless measure http://localhost:5173/feed --scroll "#feed" --speed fast --mode full
 ```
 
 `--distance`, `--speed`, `--input` and `--direction` work as they do in [`scroll()`](../README.md#scroll-a-list). Full mode adds dropped frames and blank rows, and `--input touch` makes the page touch-enabled.
@@ -87,13 +87,13 @@ npx playwright-butter measure http://localhost:5173/feed --scroll "#feed" --spee
 
 Without `--label`, the label is built from the steps and the URL's path, such as `click #filters on /products`. The same command therefore always compares with its own baseline, and the port is left out so that a dev server that starts on a different port keeps its baseline.
 
-A baseline here is for working on a change, not for the repository. It's recorded on your machine, on the code as it was before you changed it, and it's kept with the results in `node_modules/.cache/playwright-butter/adhoc`. Dev servers don't watch that folder, so writing to it doesn't reload the page being measured. In a project with no `node_modules`, the files go in the system's temporary folder instead. `--baseline record` replaces the baseline once the new results are the ones you want to compare with.
+A baseline here is for working on a change, not for the repository. It's recorded on your machine, on the code as it was before you changed it, and it's kept with the results in `node_modules/.cache/playwright-jankless/adhoc`. Dev servers don't watch that folder, so writing to it doesn't reload the page being measured. In a project with no `node_modules`, the files go in the system's temporary folder instead. `--baseline record` replaces the baseline once the new results are the ones you want to compare with.
 
 These baselines are separate from the ones your tests record. A check that should run on every pull request belongs in a spec, with `toBeSmooth()`.
 
 ## Use it from a coding agent
 
-`playwright-butter-mcp` is an [MCP](https://modelcontextprotocol.io) server with the same measurements as tools, so a coding agent can check its own change before you review it. Its [README](../packages/playwright-butter-mcp/README.md) covers the setup. It has three tools:
+`jankless-mcp` is an [MCP](https://modelcontextprotocol.io) server with the same measurements as tools, so a coding agent can check its own change before you review it. Its [README](../packages/jankless-mcp/README.md) covers the setup. It has three tools:
 
 | Tool                  | What it does                                                                                                                                                                             |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -109,10 +109,10 @@ Measurements run one at a time, because two browsers measuring at once would tak
 
 ## Call it from code
 
-The same functions are exported from `playwright-butter/adhoc`:
+The same functions are exported from `playwright-jankless/adhoc`:
 
 ```ts
-import { measureAdhoc, remeasure } from 'playwright-butter/adhoc';
+import { measureAdhoc, remeasure } from 'playwright-jankless/adhoc';
 
 const first = await measureAdhoc({
   url: 'http://localhost:5173/products',

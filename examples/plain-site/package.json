@@ -1,5 +1,5 @@
 {
-  "name": "playwright-butter-example-plain-site",
+  "name": "playwright-jankless-example-plain-site",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
-    "playwright-butter": "file:../../packages/playwright-butter",
-    "butter-churn": "file:../../packages/butter-churn"
+    "playwright-jankless": "file:../../packages/playwright-jankless",
+    "jankless": "file:../../packages/jankless"
   }
 }

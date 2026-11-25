@@ -2,12 +2,12 @@ import { test, expect } from '@playwright/test';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { main } from '../../packages/playwright-butter/src/cli.js';
+import { main } from '../../packages/playwright-jankless/src/cli.js';
 import { makeResult } from './result-factory.js';
 
 let dir: string;
 test.beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'butter-cli-'));
+  dir = mkdtempSync(join(tmpdir(), 'jankless-cli-'));
 });
 test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -48,25 +48,25 @@ test('each command has its own help', () => {
   ]) {
     const r = cli(command!, '--help');
     expect(r.code).toBe(0);
-    expect(r.out).toContain(`Usage: npx playwright-butter ${usage}`);
+    expect(r.out).toContain(`Usage: npx playwright-jankless ${usage}`);
   }
 });
 
 test('summary skips result files it cannot read', () => {
-  const results = join(dir, 'test-results', 'butter', 'a-test');
+  const results = join(dir, 'test-results', 'jankless', 'a-test');
   mkdirSync(results, { recursive: true });
   writeFileSync(join(results, 'good.json'), JSON.stringify(makeResult({ label: 'good' })));
   writeFileSync(join(results, 'bad.json'), 'not json');
   const r = cli('summary');
   expect(r.code).toBe(0);
-  expect(r.out).toContain('Butter summary of 1 result(s)');
-  expect(readFileSync(join(dir, 'test-results', 'butter', 'summary.md'), 'utf8')).toContain('"good"');
+  expect(r.out).toContain('Jankless summary of 1 result(s)');
+  expect(readFileSync(join(dir, 'test-results', 'jankless', 'summary.md'), 'utf8')).toContain('"good"');
 });
 
 test('brief: nothing to fix, and writing the briefs to a file', () => {
   expect(cli('brief')).toMatchObject({ code: 0, err: expect.stringContaining('No fix briefs') });
 
-  const results = join(dir, 'test-results', 'butter', 'a-test');
+  const results = join(dir, 'test-results', 'jankless', 'a-test');
   mkdirSync(results, { recursive: true });
   writeFileSync(join(results, 'open-filters.fix.md'), '# Fix brief: open filters\n\nDetails.\n');
   const r = cli('brief', '--out', 'out/briefs.md');
@@ -78,8 +78,8 @@ test('brief: nothing to fix, and writing the briefs to a file', () => {
 test('init-agents adds the skill where asked', () => {
   const r = cli('init-agents', '--dir', '.agents/skills', '--no-agents-md');
   expect(r.code).toBe(0);
-  expect(r.out).toContain('.agents/skills/playwright-butter/');
-  expect(existsSync(join(dir, '.agents', 'skills', 'playwright-butter', 'SKILL.md'))).toBe(true);
+  expect(r.out).toContain('.agents/skills/playwright-jankless/');
+  expect(existsSync(join(dir, '.agents', 'skills', 'playwright-jankless', 'SKILL.md'))).toBe(true);
   expect(existsSync(join(dir, 'AGENTS.md'))).toBe(false);
 });
 

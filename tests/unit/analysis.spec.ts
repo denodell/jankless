@@ -4,20 +4,20 @@ import type {
   CollectorSnapshot,
   EventRecord,
   LoafRecord,
-} from '../../packages/butter-churn/src/collector/collector.js';
+} from '../../packages/jankless/src/collector/collector.js';
 import {
   elementFromInvoker,
   groupInteractions,
   stableInvoker,
   type Interaction,
-} from '../../packages/butter-churn/src/analysis/interactions.js';
-import { GENERATED_ID } from '../../packages/butter-churn/src/collector/collector.js';
+} from '../../packages/jankless/src/analysis/interactions.js';
+import { GENERATED_ID } from '../../packages/jankless/src/collector/collector.js';
 import {
   classifyFrame,
   classifyFrames,
   FOLLOW_UP_MS,
   LOAD_GRACE_MS,
-} from '../../packages/butter-churn/src/analysis/classify.js';
+} from '../../packages/jankless/src/analysis/classify.js';
 import {
   attributeFrames,
   combineInput,
@@ -25,8 +25,8 @@ import {
   scriptBlocking,
   summarizeInput,
   summarizeLongFrames,
-} from '../../packages/butter-churn/src/analysis/aggregate.js';
-import { median, percentile, spread } from '../../packages/butter-churn/src/analysis/stats.js';
+} from '../../packages/jankless/src/analysis/aggregate.js';
+import { median, percentile, spread } from '../../packages/jankless/src/analysis/stats.js';
 
 const ev = (p: Partial<EventRecord>): EventRecord => ({
   name: 'click',
