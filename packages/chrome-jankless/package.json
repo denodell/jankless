@@ -1,0 +1,69 @@
+{
+  "name": "chrome-jankless",
+  "version": "0.0.0",
+  "description": "The Chrome adapter for Jankless: measures a running page in the Chrome you already have, through puppeteer-core, with no test runner.",
+  "license": "MIT",
+  "author": "Den Odell",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denodell/jankless.git",
+    "directory": "packages/chrome-jankless"
+  },
+  "homepage": "https://github.com/denodell/jankless/tree/main/packages/chrome-jankless#readme",
+  "bugs": {
+    "url": "https://github.com/denodell/jankless/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "chrome",
+    "puppeteer",
+    "performance",
+    "jank",
+    "jankless"
+  ],
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./adapter": {
+      "import": {
+        "types": "./dist/adapter.d.ts",
+        "default": "./dist/adapter.js"
+      },
+      "require": {
+        "types": "./dist/adapter.d.cts",
+        "default": "./dist/adapter.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepack": "node ../../scripts/copy-package-docs.mjs chrome-jankless"
+  },
+  "dependencies": {
+    "jankless": "^1.0.0",
+    "puppeteer-core": "^24.43.1"
+  },
+  "module": "./dist/index.js"
+}

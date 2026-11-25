@@ -19,7 +19,7 @@ import {
   type AdhocOutcome,
   type AdhocRequest,
 } from 'jankless/adhoc';
-import type { Adapter } from 'jankless';
+import { ADAPTER_ENV, adapterPackages, type Adapter } from 'jankless';
 
 export const SERVER_NAME = 'jankless';
 
@@ -30,9 +30,17 @@ export interface ServerOptions {
   results?: string;
   /** The server's version, as reported to clients. */
   version?: string;
-  /** The adapter that opens the browser. Default: the one installed in the project. */
+  /** The adapter that opens the browser. Default: the first of `adapterPackages` that's installed. */
   adapter?: Adapter;
+  /**
+   * The adapter packages to look for, in order. Default: `JANKLESS_ADAPTER` when it's set, then
+   * chrome-jankless, which the server comes with, then playwright-jankless.
+   */
+  adapterPackages?: string[];
 }
+
+/** The server drives the installed Chrome unless it's told otherwise. */
+export const DEFAULT_ADAPTERS = ['chrome-jankless', 'playwright-jankless'];
 
 const INSTRUCTIONS = `Measures how smooth an interaction or a scroll is on a running web page, in Chromium, and whether a change made it better or worse.
 
@@ -50,7 +58,9 @@ const step = z.object({
   selector: z
     .string()
     .optional()
-    .describe('A CSS selector, or any Playwright selector such as text=Save or role=button[name="Save"].'),
+    .describe(
+      'A CSS selector. Other forms depend on the adapter: chrome-jankless takes ::-p-text(Save), and playwright-jankless takes text=Save.',
+    ),
   text: z
     .string()
     .optional()
@@ -180,11 +190,11 @@ interface CallExtra {
  * Reports each run as it starts, when the client asked for progress. A measurement can take
  * a minute or more, and a client that gets progress can keep waiting instead of timing out.
  */
-function progressHooks(extra: CallExtra, adapter: Adapter | undefined): AdhocHooks {
+function progressHooks(extra: CallExtra, base: AdhocHooks): AdhocHooks {
   const progressToken = extra._meta?.progressToken;
-  if (progressToken === undefined) return { adapter };
+  if (progressToken === undefined) return base;
   return {
-    adapter,
+    ...base,
     onRun: ({ run, total, warmUp }) => {
       const message = warmUp ? `Warm-up run (1 of ${total})` : `Run ${run} of ${total}`;
       void extra
@@ -200,6 +210,13 @@ function progressHooks(extra: CallExtra, adapter: Adapter | undefined): AdhocHoo
 export function createServer(options: ServerOptions = {}): McpServer {
   const dir = resolve(options.dir ?? defaultAdhocDir());
   const results = options.results ?? 'test-results';
+  const adapterHooks: AdhocHooks = options.adapter
+    ? { adapter: options.adapter }
+    : {
+        adapterPackages:
+          options.adapterPackages ??
+          (process.env[ADAPTER_ENV]?.trim() ? adapterPackages() : DEFAULT_ADAPTERS),
+      };
   const server = new McpServer(
     { name: SERVER_NAME, version: options.version ?? '0.0.0' },
     { instructions: INSTRUCTIONS },
@@ -227,7 +244,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
       inTurn(async () => {
         try {
           return answered(
-            await measureAdhoc({ ...(args as AdhocRequest), dir }, progressHooks(extra, options.adapter)),
+            await measureAdhoc({ ...(args as AdhocRequest), dir }, progressHooks(extra, adapterHooks)),
           );
         } catch (err) {
           return failed((err as Error).message);
@@ -259,7 +276,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
               await remeasure(
                 label,
                 { dir, baseline: record ? 'record' : 'compare' },
-                progressHooks(extra, options.adapter),
+                progressHooks(extra, adapterHooks),
               ),
             );
           }

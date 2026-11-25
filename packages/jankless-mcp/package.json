@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "chrome-jankless": "^0.0.0",
     "jankless": "^1.0.0",
     "zod": "^4.6.7"
   }

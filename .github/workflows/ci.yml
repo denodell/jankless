@@ -35,6 +35,8 @@ jobs:
           node --input-type=module -e "const m=await import('jankless/cli'); if (typeof m.main !== 'function') process.exit(1)"
           node -e "const m=require('playwright-jankless/adapter'); if (typeof m.adapter.launch !== 'function') process.exit(1)"
           node --input-type=module -e "const m=await import('playwright-jankless/adapter'); if (typeof m.adapter.launch !== 'function') process.exit(1)"
+          node -e "const m=require('chrome-jankless/adapter'); if (typeof m.adapter.launch !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('chrome-jankless/adapter'); if (typeof m.adapter.launch !== 'function') process.exit(1)"
           node --input-type=module -e "const m=await import('jankless-mcp'); if (typeof m.createServer !== 'function') process.exit(1)"
       - run: npm run test:unit
 

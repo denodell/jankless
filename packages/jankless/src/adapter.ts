@@ -61,22 +61,40 @@ export interface Adapter {
 }
 
 /** The adapters looked for, in order. Each exports `adapter` from `<package>/adapter`. */
-export const ADAPTER_PACKAGES = ['playwright-jankless'];
+export const ADAPTER_PACKAGES = ['playwright-jankless', 'chrome-jankless'];
 
-export const NO_ADAPTER = `Measuring needs a browser adapter, and none is installed in this project. Add one:\n  npm install --save-dev ${ADAPTER_PACKAGES[0]}`;
+/** Names the one adapter package to use, in place of the first one found. */
+export const ADAPTER_ENV = 'JANKLESS_ADAPTER';
+
+/** What to say when none of `packages` is installed. */
+export function noAdapter(packages: string[] = ADAPTER_PACKAGES): string {
+  if (packages.length === 1) {
+    return `The browser adapter ${packages[0]} isn't installed in this project. Add it:\n  npm install --save-dev ${packages[0]}`;
+  }
+  return `Measuring needs a browser adapter, and none is installed in this project. Add one:\n${packages.map((p) => `  npm install --save-dev ${p}`).join('\n')}`;
+}
+
+export const NO_ADAPTER = noAdapter();
+
+/** The packages to look for: the one `JANKLESS_ADAPTER` names, or all of them in order. */
+export function adapterPackages(env: Record<string, string | undefined> = process.env): string[] {
+  const named = env[ADAPTER_ENV]?.trim();
+  return named ? [named] : ADAPTER_PACKAGES;
+}
 
 /**
- * Finds an installed adapter: in the project the command runs in, then next to the command
- * itself. Throws with what to install when there is none.
+ * Finds an installed adapter from `packages`, in that order: in the project the command runs
+ * in, then next to the command itself. Throws with what to install when there is none.
  */
 export async function loadAdapter(
   from: string = process.cwd(),
   script: string | null = process.argv[1] ?? null,
+  packages: string[] = adapterPackages(),
 ): Promise<Adapter> {
   const bases = [join(from, 'package.json')];
   // The command's own location, for an adapter installed beside it and not in the project.
   if (script && existsSync(script)) bases.push(join(dirname(realpathSync(script)), 'package.json'));
-  for (const name of ADAPTER_PACKAGES) {
+  for (const name of packages) {
     for (const base of bases) {
       let path: string;
       try {
@@ -94,5 +112,5 @@ export async function loadAdapter(
       if (adapter) return adapter;
     }
   }
-  throw new Error(NO_ADAPTER);
+  throw new Error(noAdapter(packages));
 }

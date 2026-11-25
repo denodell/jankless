@@ -5,10 +5,10 @@ An [MCP](https://modelcontextprotocol.io) server for [Jankless](https://github.c
 ## Install
 
 ```bash
-npm install -D jankless-mcp playwright-jankless
+npm install -D jankless-mcp
 ```
 
-The server depends on the measuring engine only. A browser adapter opens the page and does the steps, and `playwright-jankless` is that adapter, so it's installed in the project too. It needs Node 20 or later, `@playwright/test` 1.49 or later, and Playwright's Chromium (`npx playwright install chromium`).
+It needs Node 20 or later and Google Chrome. The server measures in the Chrome that's installed on your machine, through [`chrome-jankless`](https://github.com/denodell/jankless/tree/main/packages/chrome-jankless), so there's no browser to download and no test runner involved.
 
 Then add the server to your agent. In Claude Code:
 
@@ -69,8 +69,13 @@ npx jankless-mcp --dir .jankless --results test-results
 | ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ |
 | `--dir <folder>`  | `node_modules/.cache/jankless/adhoc` | Where baselines and results are kept.                                                      |
 | `--results <dir>` | `test-results`                       | Playwright's output directory, so the tools can also look up a check from your test suite. |
+| `--adapter <pkg>` | `chrome-jankless`                    | The browser adapter to measure with. `playwright-jankless` is the other.                   |
 
-The steps, the scroll options, baselines and limits are described in [Measure without a test](https://github.com/denodell/jankless/blob/main/docs/ad-hoc.md). The same measurements are available from the command line as `npx playwright-jankless measure`.
+Three environment variables choose the Chrome. `JANKLESS_CHROME_PATH` is the path of another Chrome or Chromium to run. `JANKLESS_CHROME_URL` is the address of a Chrome that's already running with remote debugging, such as `http://127.0.0.1:9222`, and the server then measures in a new tab of that Chrome, with its cookies and sign-ins. `JANKLESS_CHROME_ARGS` adds command-line arguments, such as `--no-sandbox` where Chrome's sandbox can't start, as root or in some containers.
+
+With `--adapter playwright-jankless`, the server measures in Playwright's Chromium, as your tests do. That package and `@playwright/test` then have to be installed in the project. Selectors other than CSS differ between the two: Chrome takes Puppeteer's `::-p-text(Save)`, and Playwright takes `text=Save`.
+
+The steps, the scroll options, baselines and limits are described in [Measure without a test](https://github.com/denodell/jankless/blob/main/docs/ad-hoc.md). The same measurements are available from the command line as `npx jankless measure`.
 
 ## License
 

@@ -1,7 +1,7 @@
 // The built commands as they're run: `jankless`, and the MCP server as an agent starts it,
 // talking over standard input and output. Both find the Playwright adapter themselves, as
 // they do in a project that has it installed. Needs `npm run build` first.
-import { test, expect } from '@playwright/test';
+import { test, expect, chromium } from '@playwright/test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { spawnSync } from 'node:child_process';
@@ -93,7 +93,7 @@ test("npx jankless runs the adapter's commands too", () => {
   expect(unknown.stderr).toContain('calibrate   How much each check varies');
 });
 
-test('the MCP server measures through the installed adapter', async ({ baseURL }) => {
+test('the MCP server records a baseline through the Playwright adapter', async ({ baseURL }) => {
   test.skip(!built, 'dist/ not built; run npm run build');
   test.setTimeout(120_000);
   const dir = mkdtempSync(join(tmpdir(), 'jankless-mcp-bin-'));
@@ -102,7 +102,7 @@ test('the MCP server measures through the installed adapter', async ({ baseURL }
     await client.connect(
       new StdioClientTransport({
         command: process.execPath,
-        args: [BIN, '--dir', dir],
+        args: [BIN, '--dir', dir, '--adapter', 'playwright-jankless'],
         env: process.env as Record<string, string>,
       }),
     );
@@ -123,6 +123,101 @@ test('the MCP server measures through the installed adapter', async ({ baseURL }
     expect(r.structuredContent).toMatchObject({ verdict: 'baseline-recorded', runs: 1 });
   } finally {
     await client.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Playwright's Chromium build has no sandbox it can use on a Linux runner.
+const CHROME_ENV = {
+  ...(process.env as Record<string, string>),
+  JANKLESS_CHROME_PATH: chromium.executablePath(),
+  ...(process.platform === 'linux' ? { JANKLESS_CHROME_ARGS: '--no-sandbox' } : {}),
+};
+
+test('npx jankless measure --adapter chrome-jankless measures in Chrome directly', ({ baseURL }) => {
+  test.skip(!existsSync(JANKLESS), 'dist/ not built; run npm run build');
+  test.setTimeout(120_000);
+  const dir = mkdtempSync(join(tmpdir(), 'jankless-bin-'));
+  try {
+    const run = (adapter: string, env: Record<string, string>) =>
+      spawnSync(
+        process.execPath,
+        [
+          JANKLESS,
+          'measure',
+          `${baseURL}/click.html?ms=150`,
+          '--click',
+          '#heavy',
+          '--runs',
+          '1',
+          '--dir',
+          dir,
+          '--adapter',
+          adapter,
+        ],
+        { encoding: 'utf8', timeout: 100_000, env },
+      );
+    const child = run('chrome-jankless', CHROME_ENV);
+    expect(child.stderr).toBe('');
+    expect(child.status).toBe(0);
+    expect(child.stdout).toContain('slowest: click on button#heavy');
+
+    // It really is the Chrome adapter: with no Chrome at that path, it says so.
+    const missing = run('chrome-jankless', { ...CHROME_ENV, JANKLESS_CHROME_PATH: join(dir, 'no-chrome') });
+    expect(missing.status).toBe(1);
+    expect(missing.stderr).toContain("Couldn't start Chrome:");
+
+    const unknown = run('safari-jankless', CHROME_ENV);
+    expect(unknown.status).toBe(1);
+    expect(unknown.stderr).toContain("The browser adapter safari-jankless isn't installed in this project.");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the MCP server drives Chrome directly unless it is told to use Playwright', async ({ baseURL }) => {
+  test.skip(!built, 'dist/ not built; run npm run build');
+  test.setTimeout(180_000);
+  const dir = mkdtempSync(join(tmpdir(), 'jankless-mcp-bin-'));
+  type Called = { isError?: boolean; content: { text: string }[] };
+  const measureWith = async (args: string[], env: Record<string, string>) => {
+    const client = new Client({ name: 'test', version: '0' });
+    try {
+      await client.connect(
+        new StdioClientTransport({ command: process.execPath, args: [BIN, '--dir', dir, ...args], env }),
+      );
+      return (await client.callTool(
+        {
+          name: 'measure_interaction',
+          arguments: {
+            url: `${baseURL}/click.html?ms=150`,
+            steps: [{ action: 'click', selector: '#heavy' }],
+            runs: 1,
+            baseline: 'off',
+          },
+        },
+        undefined,
+        { timeout: 100_000 },
+      )) as Called;
+    } finally {
+      await client.close();
+    }
+  };
+  try {
+    const noChrome = { ...CHROME_ENV, JANKLESS_CHROME_PATH: join(dir, 'no-chrome') };
+    // By default the Chrome adapter is used: with no Chrome at that path, the tool says so.
+    const byDefault = await measureWith([], noChrome);
+    expect(byDefault.isError).toBe(true);
+    expect(byDefault.content[0]!.text).toContain("Couldn't start Chrome:");
+    // With a Chrome there, it measures.
+    const inChrome = await measureWith([], CHROME_ENV);
+    expect(inChrome.content[0]!.text).toContain('slowest: click on button#heavy');
+    expect(inChrome.isError).toBeFalsy();
+    // --adapter playwright-jankless doesn't need that Chrome at all.
+    const inPlaywright = await measureWith(['--adapter', 'playwright-jankless'], noChrome);
+    expect(inPlaywright.content[0]!.text).toContain('slowest: click on button#heavy');
+    expect(inPlaywright.isError).toBeFalsy();
+  } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
