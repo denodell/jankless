@@ -159,6 +159,22 @@ test("compare_baseline on a test's label returns what the last test run found", 
   });
 });
 
+test('compare_baseline with a recipe that can no longer run says what is wrong with it', async () => {
+  const results = join(dir, 'adhoc', 'results');
+  mkdirSync(results, { recursive: true });
+  writeFileSync(
+    resultPath(results, 'old check').replace(/\.json$/, '.recipe.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      kind: 'playwright-butter-recipe',
+      request: { url: 'http://localhost:4173/', label: 'old check', steps: [] },
+    }),
+  );
+  const r = await call('compare_baseline', { label: 'old check' });
+  expect(r.isError).toBe(true);
+  expect(r.content[0]!.text).toContain('steps is empty');
+});
+
 test('get_hot_functions lists at most the five a result keeps', async () => {
   writeTestResult();
   const r = await call('get_hot_functions', { label: 'open filters', limit: 6 });

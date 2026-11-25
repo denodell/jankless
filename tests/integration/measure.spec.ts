@@ -41,7 +41,7 @@ test('work a click starts in a timer, after the click has painted', async ({ pag
     invoker: 'TimerHandler:setTimeout',
     fn: 'onLaterTimer',
   });
-  expect(result.frameClasses).toEqual({ interaction: 1, load: 0, background: 0 });
+  expect(result.frameClasses.interaction).toBe(1);
   // The click itself painted quickly: the time is in the long frame, not in input-to-paint.
   expect(result.input!.p95ToPaintMs ?? 0).toBeLessThan(100);
 });

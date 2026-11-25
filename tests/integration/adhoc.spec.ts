@@ -64,6 +64,35 @@ test('a click: the first run records a baseline, and later runs say which way it
   expect((await measureAdhoc(heavyClick(baseURL!, 150))).verdict).toBe('worse');
 });
 
+test('every kind of step runs, and a progress hook that throws is ignored', async ({ baseURL }) => {
+  const runs: number[] = [];
+  const r = await measureAdhoc(
+    {
+      url: `${baseURL}/click.html?ms=80`,
+      steps: [
+        { action: 'hover', selector: '#heavy' },
+        { action: 'click', selector: '#heavy' },
+        { action: 'press', key: 'Enter' },
+        { action: 'wait', ms: 50 },
+      ],
+      runs: 1,
+      baseline: 'off',
+      dir,
+    },
+    {
+      onRun: ({ run, total }) => {
+        runs.push(run);
+        throw new Error(`the progress listener went away at run ${run} of ${total}`);
+      },
+    },
+  );
+  expect(runs).toEqual([1, 2]);
+  expect(r.verdict).toBe('measured');
+  expect(r.label).toBe('hover #heavy, click #heavy, press Enter, wait 50ms on /click.html?ms=80');
+  // The click, then Enter on the focused button, which clicks it again.
+  expect(r.result.input!.interactions).toBeGreaterThanOrEqual(1);
+});
+
 test("baseline: 'off' only measures, and a budget is checked without one", async ({ baseURL }) => {
   const r = await measureAdhoc({
     ...heavyClick(baseURL!, 150),

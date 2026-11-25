@@ -360,6 +360,36 @@ test("a test's stored comparison reads the same way as an ad-hoc one", () => {
   expect(untouched.verdict).toBe('measured');
 });
 
+test('a result or a recipe that cannot be read counts as never measured', () => {
+  const path = resultPath(join(dir, 'results'), 'half written');
+  mkdirSync(join(dir, 'results'), { recursive: true });
+  writeFileSync(path, '{"schemaVersion": 1, "label": "half wr');
+  writeFileSync(path.replace(/\.json$/, '.recipe.json'), '{"kind": "playwright-butter-rec');
+  expect(readLastResult('half written', dir)).toBeNull();
+  expect(readRecipe('half written', dir)).toBeNull();
+  expect(listLabels(dir)).toEqual([]);
+});
+
+test('an interaction too quick for Event Timing is described, not left out', () => {
+  const quick = makeResult();
+  quick.input = { ...quick.input!, p95ToPaintMs: null, worstMs: null, byTarget: [] };
+  delete quick.comparison;
+  expect(storedOutcome({ result: quick, source: 'test' }).text).toContain(
+    'input-to-paint: every interaction painted in under 16ms',
+  );
+});
+
+test('hot functions: full mode without a profile says why', () => {
+  const noProfile = makeResult({
+    mode: 'full',
+    unavailable: [{ measurement: 'profile', reason: 'the trace had no CPU samples' }],
+  });
+  expect(formatHotFunctions(noProfile)).toContain(
+    '"open filters" has no CPU profile: the trace had no CPU samples',
+  );
+  expect(formatHotFunctions(makeResult({ mode: 'full' }))).toContain('"open filters" has no CPU profile.');
+});
+
 test('hot functions: the profile in full mode, and how to get one in quick mode', () => {
   const quick = formatHotFunctions(makeResult());
   expect(quick).toMatch(/^"open filters" was measured in quick mode, which has no CPU profile\./);

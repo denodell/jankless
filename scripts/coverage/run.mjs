@@ -24,5 +24,6 @@ const status = run([join(repo, 'node_modules/@playwright/test/cli.js'), 'test', 
   NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --import=${join(repo, 'scripts/coverage/page-coverage.mjs')}`,
 });
 run([join(repo, 'scripts/coverage/merge.mjs'), rawDir, pageDir, cacheDir, reportDir]);
-run([join(repo, 'node_modules/c8/bin/c8.js'), 'report', `--temp-directory=${reportDir}`]);
-process.exit(status ?? 1);
+// The report fails when coverage is under the thresholds in .c8rc.json.
+const report = run([join(repo, 'node_modules/c8/bin/c8.js'), 'report', `--temp-directory=${reportDir}`]);
+process.exit(status || report || 0);
