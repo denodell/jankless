@@ -62,7 +62,7 @@ test('a click: the first run records a baseline, and later runs say which way it
 
   const slower = await measureAdhoc(heavyClick(baseURL!, 400));
   expect(slower.verdict).toBe('worse');
-  expect(slower.text).toMatch(/^"heavy click" is less smooth than its baseline:\n {2}input-to-paint \(p95\)/);
+  expect(slower.text).toMatch(/^"heavy click" is jankier than its baseline:\n {2}input-to-paint \(p95\)/);
   expect(slower.text).toContain('onHeavyClick in click.js');
 
   const faster = await measureAdhoc(heavyClick(baseURL!, 20));

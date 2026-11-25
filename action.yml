@@ -1,5 +1,5 @@
 name: playwright-jankless
-description: Checks that a web UI stays smooth, for Playwright in CI. Flags PRs that make scrolling or interacting less smooth than previous runs.
+description: Checks that a web UI stays smooth, for Playwright in CI. Flags PRs that make scrolling or interacting jankier than previous runs.
 author: Den Odell
 branding:
   icon: activity

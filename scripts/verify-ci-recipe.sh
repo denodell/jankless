@@ -36,11 +36,11 @@ echo "== regression: must fail"
 if SLOW=80 JANKLESS_ENFORCE=fail JANKLESS_BASELINE_DIR=jankless-baselines npx playwright test --update-snapshots=none -g 'filters' > regression.log 2>&1; then
   cat regression.log; echo 'the regression passed, but should have failed'; exit 1
 fi
-grep -q 'is less smooth than its baseline' regression.log
+grep -q 'is jankier than its baseline' regression.log
 grep -q 'toggleFilters' regression.log
 # The reporter (loaded by package name in the example's config) names it in the summary.
 grep -q '\*\*1 got worse\*\*' test-results/jankless/summary.md
 grep -q 'toggleFilters' test-results/jankless/summary.md
-echo "regression failed as expected:"; grep -A4 'is less smooth' regression.log | head -6
+echo "regression failed as expected:"; grep -A4 'is jankier' regression.log | head -6
 rm -f regression.log
 echo "CI recipe verified"
