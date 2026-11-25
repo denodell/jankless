@@ -1,12 +1,22 @@
-# playwright-jankless
+# Jankless
 
-Checks that a web UI stays smooth, for [Playwright](https://playwright.dev). It measures interactions and list scrolling in Chromium, compares each one with a stored baseline, and tells you which element and which code got slower.
+Jankless checks that a web UI stays smooth. It measures interactions and list scrolling in Chromium, compares each one with a stored baseline, and tells you which element and which code got slower.
 
 ![A replay of a demo trail journal scrolled 3,000px, played at a quarter of real speed: the frame rate falls to about 30 frames per second as frames are dropped](docs/replay-frame-rate.gif)
 
 This demo journal scrolls itself with a script that moves the page on every frame. Half its frames are dropped, so it runs at about 30 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API reported nothing. The dropped frames came from Chrome's own frame timeline. When a check like this gets worse, the test gets this replay attached.
 
-It only warns until you switch a check to fail, has no third-party runtime dependencies, and sends no data anywhere. The [FAQ](docs/faq.md) covers how much time it adds to a suite, how it stays steady in CI, and how it differs from Lighthouse and real-user monitoring.
+It only warns until you switch a check to fail, and it sends no data anywhere. The engine and the Playwright package have no third-party runtime dependencies. The [FAQ](docs/faq.md) covers how much time it adds to a suite, how it stays steady in CI, and how it differs from Lighthouse and real-user monitoring.
+
+## Three ways to use it
+
+| What you want                                                    | Package               | Where to start                                    |
+| ---------------------------------------------------------------- | --------------------- | ------------------------------------------------- |
+| Checks in your [Playwright](https://playwright.dev) tests and CI | `playwright-jankless` | [Install](#install)                               |
+| To measure a page from the command line while you work on it     | `chrome-jankless`     | [Measure without a test](#measure-without-a-test) |
+| A coding agent that checks its own changes                       | `jankless-mcp`        | [The MCP server](#the-mcp-server)                 |
+
+All three use the same measuring engine, [`jankless`](packages/jankless), so they measure the same things in the same way. Most of this page is about the first one, checks in Playwright tests.
 
 ## Install
 
@@ -116,6 +126,12 @@ npx jankless measure http://localhost:5173/products --click "#filters"
 
 `measure` opens a running page, does the steps or a `--scroll`, and compares the result with the last one recorded under the same label, so you can check a change before there's a spec for it. The first line of its output says whether the page is less smooth, smoother, or shows no clear change. [Measure without a test](docs/ad-hoc.md) covers the steps and options.
 
+With `playwright-jankless` installed, the page opens in Playwright's Chromium. A project with no Playwright can install [`chrome-jankless`](packages/chrome-jankless) instead, and the page then opens in the Google Chrome that's already on your machine:
+
+```bash
+npm install -D jankless chrome-jankless
+```
+
 ## Baselines
 
 The first run records a baseline next to your test, the way `toMatchSnapshot()` does, and passes. Later runs compare with it, and `npx playwright test --update-snapshots` records it again: `=all` replaces every baseline, `=changed` only those that got worse, and `=none` never writes. Renaming a test starts a new baseline.
@@ -192,6 +208,8 @@ The skill was checked by having an agent fix the slow version of each [demo app]
 npm install -D jankless-mcp
 claude mcp add --transport stdio jankless -- npx jankless-mcp
 ```
+
+The server measures in your installed Google Chrome, so there's no Playwright to set up and no browser to download. Its [README](packages/jankless-mcp/README.md) covers other agents and the options.
 
 ## Budgets
 
@@ -311,7 +329,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Packages
 
-This repository publishes four packages. `playwright-jankless` is the one to install. It depends on [`jankless`](packages/jankless), the measuring engine, which has the `jankless` command and doesn't depend on Playwright: other browser libraries can drive it through a small adapter. [`chrome-jankless`](packages/chrome-jankless) is a second adapter, which drives the Chrome installed on your machine with no test runner. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents, and it measures through `chrome-jankless` unless you choose Playwright. Those two are the only ones with third-party dependencies.
+This repository publishes four packages. `playwright-jankless` is the one to install for checks in your tests. It depends on [`jankless`](packages/jankless), the measuring engine, which has the `jankless` command and doesn't depend on Playwright: other browser libraries can drive it through a small adapter. [`chrome-jankless`](packages/chrome-jankless) is a second adapter, which drives the Chrome installed on your machine with no test runner. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents, and it measures through `chrome-jankless` unless you choose Playwright. Those two are the only ones with third-party dependencies.
 
 ## License
 
