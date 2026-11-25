@@ -23,13 +23,13 @@ The engine needs Chromium, because it relies on the Chrome DevTools Protocol and
 
 ## The command and ad-hoc measurements
 
-The package has the `jankless` command. `summary` and `brief` read a run's result files, and `measure` measures a URL with no test around it, as `measureAdhoc()` from `jankless/adhoc` does. Measuring needs a browser, so the engine loads an adapter from the project it runs in: the `adapter` export of `<package>/adapter`, which is an `Adapter` object.
+The package includes the `jankless` command. `summary` and `brief` read a run's result files, and `measure` measures a URL with no test around it, as `measureAdhoc()` from `jankless/adhoc` does. Measuring needs a browser, so the engine loads an adapter from the project it runs in: the `adapter` export of `<package>/adapter`, which is an `Adapter` object.
 
 - `launch(options)` opens a browser and returns its page as a `PageDriver`, with `open(url)`, `runSteps(steps)`, `element(selector)` and `close()`.
 - `commands` adds commands to `jankless` that only make sense with that library, such as playwright-jankless's `calibrate`.
 
 The engine looks for the packages in `ADAPTER_PACKAGES`, in order: `playwright-jankless`, then `chrome-jankless`. A new adapter is added to that list, or named with `JANKLESS_ADAPTER`.
 
-## Licence
+## License
 
 MIT. The replay panel's font, Archivo, is included under the SIL Open Font License 1.1 (`ARCHIVO-OFL.txt`).

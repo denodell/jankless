@@ -1,4 +1,4 @@
-// Copies the licence and the package's README into a package folder before `npm pack` or
+// Copies the license and the package's README into a package folder before `npm pack` or
 // `npm publish`. playwright-jankless gets the repository's README; jankless has its own.
 // Run by each package's prepack script: node ../../scripts/copy-package-docs.mjs <package>
 import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
