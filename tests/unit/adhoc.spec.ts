@@ -238,12 +238,12 @@ test('improved() is the mirror of worse', () => {
   expect(check(onTime(60), 'frames.onTimePercent').status).toBe('worse');
 });
 
-test('less smooth: what got worse comes first, then the code behind it', () => {
+test('jankier: what got worse comes first, then the code behind it', () => {
   const before = makeResult();
   const now = makeResult({ input: { p95ToPaintMs: 240, worstMs: 240 } });
   expect(formatOutcome(outcome(now, compared(now, before), 'worse'))).toBe(
     [
-      '"open filters" is less smooth than its baseline:',
+      '"open filters" is jankier than its baseline:',
       '  input-to-paint (p95) 240ms (+128ms, +114.3%), slowest: click on button#filters',
       'No clear change:',
       '  long frames 1 (±0, ±0%)',
@@ -354,7 +354,7 @@ test("a test's stored comparison reads the same way as an ad-hoc one", () => {
   now.comparison = compared(now, before);
   const stored = storedOutcome({ result: now, source: 'test' });
   expect(stored.verdict).toBe('worse');
-  expect(stored.text).toMatch(/^"open filters" is less smooth than its baseline:/);
+  expect(stored.text).toMatch(/^"open filters" is jankier than its baseline:/);
 
   const untouched = storedOutcome({ result: makeResult(), source: 'test' });
   expect(untouched.verdict).toBe('measured');

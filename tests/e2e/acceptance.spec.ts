@@ -61,7 +61,7 @@ test("10ms → 60ms click work fails with enforce: 'fail'", () => {
   const r = run({ CLICK_MS: '60', ENFORCE: 'fail' });
   expect(r.code, r.output).toBe(1);
   expect(r.result!.comparison!.status).toBe('fail');
-  expect(r.output).toContain('"checkout" is less smooth than its baseline');
+  expect(r.output).toContain('"checkout" is jankier than its baseline');
   expect(r.output).toContain('click on button#heavy');
   expect(r.output).toContain('onHeavyClick in click.js');
 });

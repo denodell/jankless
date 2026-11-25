@@ -30,7 +30,7 @@ Measured in quick mode, CPU slowed 4x, the median of 5 runs.
 
 The first run records a baseline. After a change, the same command compares with it, and the first line says which way the page moved:
 
-- `is less smooth than its baseline` when a check got worse by more than `maxIncrease`.
+- `is jankier than its baseline` when a check got worse by more than `maxIncrease`.
 - `is smoother than its baseline` when a check improved by more than `maxIncrease` and nothing got worse.
 - `no clear change from its baseline` when each check moved by less than `maxIncrease`. A difference that small can be noise, so it isn't reported as better or worse.
 

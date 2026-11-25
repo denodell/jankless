@@ -1,4 +1,4 @@
-"open filters" is less smooth than its baseline:
+"open filters" is jankier than its baseline:
   input-to-paint (p95) 176ms (+72ms, +69.2%), slowest: click on button#filters
 
 Scripts blocking the interaction:

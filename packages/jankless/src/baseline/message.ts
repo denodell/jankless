@@ -110,7 +110,7 @@ export function formatMessage(result: JanklessResult, comparison: Comparison, cw
   } else if (comparison.status === 'not-compared') {
     lines.push(`"${result.label}": not compared with a baseline.`);
   } else if (worse.length) {
-    lines.push(`"${result.label}" is less smooth than its baseline:`);
+    lines.push(`"${result.label}" is jankier than its baseline:`);
     for (const c of worse) {
       const where =
         c.metric.startsWith('input.') && topTarget

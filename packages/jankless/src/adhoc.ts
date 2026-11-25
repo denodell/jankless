@@ -536,7 +536,7 @@ export function formatOutcome(o: Omit<AdhocOutcome, 'text'>): string {
   switch (verdict) {
     case 'worse':
       lines.push(
-        `"${o.label}" is less smooth than its baseline:`,
+        `"${o.label}" is jankier than its baseline:`,
         ...indent(worse.map((c) => checkLine(result, c))),
       );
       if (better.length) lines.push('Better:', ...indent(better.map((c) => checkLine(result, c))));

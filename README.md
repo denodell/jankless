@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/denodell/jankless/actions/workflows/ci.yml/badge.svg)](https://github.com/denodell/jankless/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Jankless tests how smooth a web app is to use. It measures clicks, typing and scrolling in Chromium on every pull request, compares each one with a baseline, and warns or fails when a change makes the page less smooth.
+Jankless tests how smooth a web app is to use. It measures clicks, typing and scrolling in Chromium on every pull request, compares each one with a baseline, and warns or fails when a change makes the page jankier.
 
 - **It measures what a user would notice.** How long an input takes to paint, long frames, dropped frames, and rows that are still blank while a list scrolls.
 - **It names the cause.** The element, the script and the function behind a regression, with their files and line numbers.
@@ -134,7 +134,7 @@ When a full-mode `measure()` or `scroll()` check gets worse, a video of one run 
 npx jankless measure http://localhost:5173/products --click "#filters"
 ```
 
-`measure` opens a running page, does the steps or a `--scroll`, and compares the result with the last one recorded under the same label, so you can check a change before there's a spec for it. The first line of its output says whether the page is less smooth, smoother, or shows no clear change. [Measure without a test](docs/ad-hoc.md) covers the steps and options.
+`measure` opens a running page, does the steps or a `--scroll`, and compares the result with the last one recorded under the same label, so you can check a change before there's a spec for it. The first line of its output says whether the page is jankier, smoother, or shows no clear change. [Measure without a test](docs/ad-hoc.md) covers the steps and options.
 
 With `playwright-jankless` installed, the page opens in Playwright's Chromium. In a project that doesn't use Playwright, you can install [`chrome-jankless`](packages/chrome-jankless) instead, and the page then opens in the Google Chrome that's already installed on your machine:
 
@@ -181,7 +181,7 @@ expect(result).toBeSmooth({ enforce: 'fail' });
 The message starts with what got worse and the scripts responsible:
 
 ```
-"checkout" is less smooth than its baseline:
+"checkout" is jankier than its baseline:
   input-to-paint (p95) 64ms (+48ms, +300%), slowest: click on button#heavy
 
 Scripts blocking the interaction:
