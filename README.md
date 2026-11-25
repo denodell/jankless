@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/denodell/jankless/actions/workflows/ci.yml/badge.svg)](https://github.com/denodell/jankless/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Jankless is a smoothness testing tool for web apps. It measures clicks, typing and scrolling in Chromium on every pull request, compares each one with a baseline, and warns or fails when a change makes the page less smooth.
+Jankless tests how smooth a web app is to use. It measures clicks, typing and scrolling in Chromium on every pull request, compares each one with a baseline, and warns or fails when a change makes the page less smooth.
 
 - **It measures what a user would notice.** How long an input takes to paint, long frames, dropped frames, and rows that are still blank while a list scrolls.
 - **It names the cause.** The element, the script and the function behind a regression, with their files and line numbers.
