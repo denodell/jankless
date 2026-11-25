@@ -147,7 +147,7 @@ test("compare_baseline on a test's label returns what the last test run found", 
   const r = await call('compare_baseline', { label: 'open filters' });
   expect(r.isError).toBeFalsy();
   const text = r.content[0]!.text;
-  expect(text).toMatch(/^"open filters" is less smooth than its baseline:/);
+  expect(text).toMatch(/^"open filters" is jankier than its baseline:/);
   expect(text).toContain(
     'This is what the last run of the test "Filters › open smoothly" (tests/filters.spec.ts) found. Run that test again to measure a change.',
   );

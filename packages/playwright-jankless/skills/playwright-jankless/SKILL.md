@@ -1,6 +1,6 @@
 ---
 name: playwright-jankless
-description: Fix a regression caught by playwright-jankless, where scrolling or an interaction got less smooth, such as a fix brief (a .fix.md file or a "Fix brief" pasted from a pull request), a toBeSmooth() failure or jankless-warning, slow input-to-paint, long animation frames, dropped frames, or blank frames in a scrolled list. Use it when asked to make an interaction, scroll, animation or drag smooth again.
+description: Fix a regression caught by playwright-jankless, where scrolling or an interaction got jankier, such as a fix brief (a .fix.md file or a "Fix brief" pasted from a pull request), a toBeSmooth() failure or jankless-warning, slow input-to-paint, long animation frames, dropped frames, or blank frames in a scrolled list. Use it when asked to make an interaction, scroll, animation or drag smooth again.
 ---
 
 # Fix a playwright-jankless regression

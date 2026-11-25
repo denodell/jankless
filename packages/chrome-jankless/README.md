@@ -18,7 +18,7 @@ It needs Node 20 or later and Google Chrome.
 npx jankless measure http://localhost:5173/products --click "#filters" --adapter chrome-jankless
 ```
 
-The first run records a baseline. After that, the first line of each run's output says whether the page is less smooth, smoother, or shows no clear change. [Measure without a test](https://github.com/denodell/jankless/blob/main/docs/ad-hoc.md) covers the steps, the scroll options and the baselines.
+The first run records a baseline. After that, the first line of each run's output says whether the page is jankier, smoother, or shows no clear change. [Measure without a test](https://github.com/denodell/jankless/blob/main/docs/ad-hoc.md) covers the steps, the scroll options and the baselines.
 
 `--adapter` is only needed when `playwright-jankless` is installed too, because that adapter is used first when both are installed. Setting `JANKLESS_ADAPTER=chrome-jankless` chooses this adapter for every command.
 

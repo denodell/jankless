@@ -47,7 +47,7 @@ const INSTRUCTIONS = `Measures how smooth an interaction or a scroll is on a run
 To check a change:
 1. Before changing any code, call measure_interaction with the page's URL and the steps or the scroll. The first call records a baseline and returns a label.
 2. Make the change.
-3. Call compare_baseline with that label. It measures again and says whether the page is less smooth, smoother, or shows no clear change.
+3. Call compare_baseline with that label. It measures again and says whether the page is jankier, smoother, or shows no clear change.
 
 Numbers belong to the machine they were measured on, so only compare results from this server with each other. "No clear change" means the difference is small enough to be noise: don't treat it as a win or a loss. Measure a production build when there is one, because a development build is often too slow to show a difference. For the functions behind a slow result, measure with mode "full" and call get_hot_functions.`;
 
@@ -257,7 +257,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
     {
       title: 'Measure again and compare with the baseline',
       description:
-        'Runs a measurement again by its label, exactly as measure_interaction last ran it, and compares it with the baseline: less smooth, smoother, or no clear change. Use it after each change while working on a fix. For a label from a Playwright test instead, it returns the comparison the last test run stored.',
+        'Runs a measurement again by its label, exactly as measure_interaction last ran it, and compares it with the baseline: jankier, smoother, or no clear change. Use it after each change while working on a fix. For a label from a Playwright test instead, it returns the comparison the last test run stored.',
       inputSchema: {
         label: z.string().describe('The label measure_interaction returned, or a test check’s label.'),
         record: z

@@ -141,11 +141,11 @@ test("a regression warns, or fails with enforce: 'fail'", () => {
   const warned = run({ CLICK_MS: '400' });
   expect(warned.code, warned.output).toBe(0);
   expect(buy(warned).comparison!.status).toBe('warn');
-  expect(warned.output).toContain('"buy, then search" is less smooth than its baseline');
+  expect(warned.output).toContain('"buy, then search" is jankier than its baseline');
 
   const r = run({ CLICK_MS: '400', JANKLESS_ENFORCE: 'fail' });
   expect(r.code, r.output).toBe(1);
-  expect(r.output).toContain('"buy, then search" is less smooth than its baseline');
+  expect(r.output).toContain('"buy, then search" is jankier than its baseline');
   expect(r.output).toContain('click on button#heavy');
   expect(r.output).toContain('onHeavyClick');
 });
