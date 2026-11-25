@@ -1,12 +1,22 @@
 # Jankless
 
-Jankless checks that a web UI stays smooth. It measures interactions and list scrolling in Chromium, compares each one with a stored baseline, and tells you which element and which code got slower.
+[![CI](https://github.com/denodell/jankless/actions/workflows/ci.yml/badge.svg)](https://github.com/denodell/jankless/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Jankless is a smoothness testing tool for web apps. It measures clicks, typing and scrolling in Chromium on every pull request, compares each one with a baseline, and warns or fails when a change makes the page less smooth.
+
+- **It measures what a user would notice.** How long an input takes to paint, long frames, dropped frames, and rows that are still blank while a list scrolls.
+- **It names the cause.** The element, the script and the function behind a regression, with their files and line numbers.
+- **It runs in the tests you already have.** One line in your Playwright fixtures measures every test, and `measure()` and `scroll()` check the interactions you care about most.
+- **It's built for CI.** Baselines are kept per machine, and a GitHub Action compares each pull request with main and posts the results as a comment.
+- **It warns before it fails.** A check only fails a build once you set it to `enforce: 'fail'`.
+- **It works with coding agents.** A check that got worse comes with a fix brief, and an MCP server lets an agent measure its own change.
+- **It keeps your data on your machine.** There's no telemetry, and the engine and the Playwright package have no third-party runtime dependencies.
 
 ![A replay of a demo trail journal scrolled 3,000px, played at a quarter of real speed: the frame rate falls to about 30 frames per second as frames are dropped](docs/replay-frame-rate.gif)
 
 This demo journal scrolls itself with a script that moves the page on every frame. Half its frames are dropped, so it runs at about 30 frames per second. No single frame took 50ms, so the browser's Long Animation Frames API reported nothing. The dropped frames came from Chrome's own frame timeline. When a check like this gets worse, the test gets this replay attached.
 
-It only warns until you switch a check to fail, and it sends no data anywhere. The engine and the Playwright package have no third-party runtime dependencies. The [FAQ](docs/faq.md) covers how much time it adds to a suite, how it stays steady in CI, and how it differs from Lighthouse and real-user monitoring.
+The [FAQ](docs/faq.md) covers how much time it adds to a suite, how it stays steady in CI, and how it differs from Lighthouse and real-user monitoring.
 
 ## Three ways to use it
 
