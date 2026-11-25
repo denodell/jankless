@@ -1,11 +1,12 @@
-// npx playwright-jankless measure <url> [steps | --scroll <selector>] [options]
+// npx jankless measure <url> [steps | --scroll <selector>] [options]
 import { parseArgs } from 'node:util';
 import { isAbsolute, relative } from 'node:path';
-import { forwardSlashes } from 'jankless';
-import { PACKAGE_NAME } from './constants.js';
-import type { AdhocOutcome, AdhocRequest, Step } from './adhoc.js';
+import { forwardSlashes } from '../output.js';
+import type { Adapter } from '../adapter.js';
+import type { AdhocOutcome, AdhocRequest, Step } from '../adhoc.js';
 
-export const MEASURE_HELP = `Usage: npx ${PACKAGE_NAME} measure <url> [steps] [options]
+/** The help text, for the command name it was run as. */
+export const measureHelp = (command: string) => `Usage: npx ${command} measure <url> [steps] [options]
 
 Measures an interaction or a scroll on a running page, with no spec file, and compares it
 with the last baseline recorded under the same label. The first run records the baseline.
@@ -42,8 +43,8 @@ Options:
   --help                 Show this help
 
 Examples:
-  npx ${PACKAGE_NAME} measure http://localhost:5173/products --click "#filters"
-  npx ${PACKAGE_NAME} measure http://localhost:5173/feed --scroll "#feed" --mode full
+  npx ${command} measure http://localhost:5173/products --click "#filters"
+  npx ${command} measure http://localhost:5173/feed --scroll "#feed" --mode full
 `;
 
 const STEP_FLAGS = ['click', 'hover', 'type', 'press', 'wait'] as const;
@@ -186,31 +187,40 @@ export function exitCodeOf(
   return outcome.verdict === 'worse' && enforce === 'fail' ? 1 : 0;
 }
 
-export async function measureCommand(args: string[]): Promise<number> {
+export const MEASURE_HELP = measureHelp('jankless');
+
+export interface MeasureCommandOptions {
+  /** The command name to show in help and errors. Default `jankless`. */
+  command?: string;
+  /** The adapter that opens the browser. Default: the one installed in this project. */
+  adapter?: Adapter;
+}
+
+export async function measureCommand(args: string[], options: MeasureCommandOptions = {}): Promise<number> {
+  const command = options.command ?? 'jankless';
   let parsed: MeasureArgs | null;
   try {
     parsed = parseMeasureArgs(args);
   } catch (err) {
-    console.error(`${(err as Error).message}\n\nRun npx ${PACKAGE_NAME} measure --help for the options.`);
+    console.error(`${(err as Error).message}\n\nRun npx ${command} measure --help for the options.`);
     return 1;
   }
   if (!parsed) {
-    console.log(MEASURE_HELP);
+    console.log(measureHelp(command));
     return 0;
   }
-  // Loaded here, so the other commands don't start Playwright.
-  const { measureAdhoc, validateRequest } = await import('./adhoc.js');
+  const { measureAdhoc, validateRequest } = await import('../adhoc.js');
   let outcome: AdhocOutcome;
   try {
     validateRequest(parsed.request);
   } catch (err) {
-    console.error(`${(err as Error).message}\n\nRun npx ${PACKAGE_NAME} measure --help for the options.`);
+    console.error(`${(err as Error).message}\n\nRun npx ${command} measure --help for the options.`);
     return 1;
   }
   try {
-    outcome = await measureAdhoc(parsed.request);
+    outcome = await measureAdhoc(parsed.request, { adapter: options.adapter });
   } catch (err) {
-    // Playwright colors its call log.
+    // An adapter's errors can be colored, as Playwright's call logs are.
     // eslint-disable-next-line no-control-regex
     const message = (err as Error).message.replace(/\u001b\[[0-9;]*m/g, '').trimEnd();
     console.error(`Couldn't measure ${parsed.request.url}: ${message}`);

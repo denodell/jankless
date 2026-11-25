@@ -1,7 +1,7 @@
 {
   "name": "jankless-mcp",
   "version": "0.0.0",
-  "description": "An MCP server for playwright-jankless: a coding agent can check how smooth an interaction or a scroll is on a running page, and whether its change made it better or worse.",
+  "description": "An MCP server for Jankless: a coding agent can check how smooth an interaction or a scroll is on a running page, and whether its change made it better or worse.",
   "license": "MIT",
   "author": "Den Odell",
   "repository": {
@@ -20,7 +20,6 @@
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "playwright",
     "performance",
     "jank",
     "jankless"
@@ -51,10 +50,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
-    "playwright-jankless": "^1.0.0",
+    "jankless": "^1.0.0",
     "zod": "^4.6.7"
-  },
-  "peerDependencies": {
-    "@playwright/test": ">=1.49.0"
   }
 }

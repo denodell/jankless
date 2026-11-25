@@ -1,6 +1,6 @@
 // Ad-hoc checks: a URL and a list of steps, measured with no spec file. The CLI's `measure`
-// command and the jankless-mcp server both run through here.
-import { chromium, type Page } from '@playwright/test';
+// command and the jankless-mcp server both run through here. An adapter opens the browser and
+// does the steps (adapter.ts); everything else is here.
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -33,19 +33,11 @@ import {
   type ElementTarget,
   type MeasureContext,
   type ScrollOptions,
-} from 'jankless';
-import { locatorTarget, playwrightDriver } from './driver.js';
+} from './index.js';
+import { loadAdapter, type Adapter, type Step } from './adapter.js';
 import { filesEndingIn, readResults } from './results.js';
 
-/** One thing done to the page. Steps run in order. */
-export type Step =
-  | { action: 'click'; selector: string }
-  | { action: 'hover'; selector: string }
-  /** Types one key at a time, into `selector` when given, otherwise into the focused element. */
-  | { action: 'type'; text: string; selector?: string }
-  /** A key by its `KeyboardEvent.key` name, such as `Enter` or `ArrowDown`. */
-  | { action: 'press'; key: string }
-  | { action: 'wait'; ms: number };
+export type { Step } from './adapter.js';
 
 /** A scroll to measure instead of steps, with the same options as `jankless.scroll()`. */
 export interface AdhocScroll extends Omit<ScrollOptions, 'label'> {
@@ -84,7 +76,7 @@ export interface AdhocRequest {
   viewport?: { width: number; height: number };
   /** A touch-enabled page. Enabled automatically for `scroll.input: 'touch'`. */
   touch?: boolean;
-  /** The browser channel. Default `chromium`, which runs new headless mode. */
+  /** The browser build, in the adapter's terms. playwright-jankless defaults to `chromium`, which runs new headless mode. */
   channel?: string;
 }
 
@@ -118,14 +110,10 @@ const PROTOCOLS = ['http:', 'https:', 'file:'];
 
 /** The longest one `wait` step may be. */
 export const MAX_WAIT_MS = 30_000;
-/** How long a step waits for its element. Shorter than Playwright's 30s: a wrong selector should fail soon. */
-const STEP_TIMEOUT_MS = 10_000;
-/** Time between typed keys: slow enough for each key to paint, so each is its own interaction. */
-const TYPE_DELAY_MS = 100;
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 };
 /** Dev servers don't watch node_modules, so writing here doesn't reload the page being measured. */
-const CACHE_SUBDIR = '.cache/playwright-jankless/adhoc';
-const RECIPE_KIND = 'playwright-jankless-recipe';
+const CACHE_SUBDIR = '.cache/jankless/adhoc';
+const RECIPE_KIND = 'jankless-recipe';
 /** How many scripts and functions the text names. */
 const TEXT_ITEMS = 3;
 
@@ -286,7 +274,7 @@ export function defaultAdhocDir(cwd = process.cwd()): string {
     if (existsSync(join(d, '.git')) || dirname(d) === d) break;
   }
   const id = createHash('sha256').update(start).digest('hex').slice(0, 12);
-  return join(tmpdir(), 'playwright-jankless-adhoc', id);
+  return join(tmpdir(), 'jankless-adhoc', id);
 }
 
 const resultsDir = (dir: string) => join(dir, 'results');
@@ -304,46 +292,12 @@ function baselineTarget(dir: string, use: BaselineUse): BaselineTarget {
   };
 }
 
-async function runSteps(page: Page, steps: Step[]): Promise<void> {
-  for (const s of steps) {
-    switch (s.action) {
-      case 'click':
-        await page.locator(s.selector).click();
-        break;
-      case 'hover':
-        await page.locator(s.selector).hover();
-        break;
-      case 'type':
-        if (s.selector) await page.locator(s.selector).pressSequentially(s.text, { delay: TYPE_DELAY_MS });
-        else await page.keyboard.type(s.text, { delay: TYPE_DELAY_MS });
-        break;
-      case 'press':
-        await page.keyboard.press(s.key);
-        break;
-      case 'wait':
-        await page.waitForTimeout(s.ms);
-        break;
-    }
-  }
-}
-
-/** Without its hash: two URLs that only differ there are the same document. */
-const documentOf = (url: string) => url.replace(/#.*$/, '');
-
-/**
- * Loads the URL again from scratch. Going to the URL the page is already on, or to one that
- * differs only in its hash, doesn't load a new document, so those are reloaded.
- */
-async function reopen(page: Page, url: string): Promise<void> {
-  const before = page.url();
-  if (before !== url) await page.goto(url, { waitUntil: 'load' });
-  if (documentOf(before) === documentOf(url)) await page.reload({ waitUntil: 'load' });
-}
-
 /** Called while a measurement runs, to report how far along it is. */
 export interface AdhocHooks {
   /** Before each run starts. `run` counts from 1, and the first run is the warm-up. */
   onRun?: (progress: { run: number; total: number; warmUp: boolean }) => void;
+  /** The adapter that opens the browser. Default: the one installed in this project. */
+  adapter?: Adapter;
 }
 
 /**
@@ -360,31 +314,28 @@ export async function measureAdhoc(input: AdhocRequest, hooks: AdhocHooks = {}):
   // A touch scroll needs a touch-enabled page, whatever `touch` says.
   const touch = request.touch === true || request.scroll?.input === 'touch';
 
-  const browser = await chromium.launch({
-    channel: request.channel ?? 'chromium',
-    headless: !request.headed,
+  const adapter = hooks.adapter ?? (await loadAdapter());
+  const browser = await adapter.launch({
+    headed: !!request.headed,
+    viewport: request.viewport ?? DEFAULT_VIEWPORT,
+    touch,
+    channel: request.channel,
   });
   let result: JanklessResult;
   try {
-    const context = await browser.newContext({
-      viewport: request.viewport ?? DEFAULT_VIEWPORT,
-      hasTouch: touch,
-    });
-    const page = await context.newPage();
-    page.setDefaultTimeout(STEP_TIMEOUT_MS);
-    const driver = playwrightDriver(page);
+    const driver = browser.page;
     await preparePage(driver);
-    await page.goto(request.url, { waitUntil: 'load' });
-    await runSteps(page, setup);
+    await browser.open(request.url);
+    await browser.runSteps(setup);
 
-    const options = resolveOptions<Page>([
+    const options = resolveOptions([
       {
         ...optionsOf(request),
         // There's no report to attach a replay to.
         replay: 'off',
-        reset: async ({ page: p }) => {
-          await reopen(p, request.url);
-          await runSteps(p, setup);
+        reset: async () => {
+          await browser.open(request.url);
+          await browser.runSteps(setup);
         },
       },
     ]);
@@ -407,10 +358,10 @@ export async function measureAdhoc(input: AdhocRequest, hooks: AdhocHooks = {}):
     result = request.scroll
       ? await measureScroll(
           ctx,
-          locatorTarget(page.locator(request.scroll.selector ?? 'html')),
+          browser.element(request.scroll.selector ?? 'html'),
           resolveScroll(request.scroll),
         )
-      : await measure(ctx, () => runSteps(page, request.steps!));
+      : await measure(ctx, () => browser.runSteps(request.steps!));
   } finally {
     await browser.close();
   }

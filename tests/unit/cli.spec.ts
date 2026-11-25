@@ -2,7 +2,11 @@ import { test, expect } from '@playwright/test';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { main } from '../../packages/playwright-jankless/src/cli.js';
+import { main as engineMain } from '../../packages/jankless/src/cli/cli.js';
+import { adapter } from '../../packages/playwright-jankless/src/adapter.js';
+
+// As `npx playwright-jankless` runs it: the engine's commands, with this adapter's added.
+const main = (argv: string[]) => engineMain(argv, { command: 'playwright-jankless', adapter });
 import { makeResult } from './result-factory.js';
 
 let dir: string;

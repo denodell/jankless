@@ -1,6 +1,6 @@
 import { defineConfig, type Options } from 'tsup';
 
-// playwright-jankless and the MCP SDK are dependencies, so they stay imports.
+// jankless and the MCP SDK are dependencies, so they stay imports.
 const shared: Options = {
   format: ['esm'],
   sourcemap: true,

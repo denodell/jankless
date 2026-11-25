@@ -50,14 +50,14 @@
         "default": "./dist/reporter.cjs"
       }
     },
-    "./adhoc": {
+    "./adapter": {
       "import": {
-        "types": "./dist/adhoc.d.ts",
-        "default": "./dist/adhoc.js"
+        "types": "./dist/adapter.d.ts",
+        "default": "./dist/adapter.js"
       },
       "require": {
-        "types": "./dist/adhoc.d.cts",
-        "default": "./dist/adhoc.cjs"
+        "types": "./dist/adapter.d.cts",
+        "default": "./dist/adapter.cjs"
       }
     },
     "./package.json": "./package.json"

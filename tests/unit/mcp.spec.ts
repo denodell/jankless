@@ -35,7 +35,7 @@ const call = (name: string, args: Record<string, unknown>) =>
   client.callTool({ name, arguments: args }) as Promise<Called>;
 
 test('it names itself and says how to check a change', () => {
-  expect(client.getServerVersion()).toMatchObject({ name: 'playwright-jankless', version: '1.2.3' });
+  expect(client.getServerVersion()).toMatchObject({ name: 'jankless', version: '1.2.3' });
   const instructions = client.getInstructions()!;
   expect(instructions).toContain('call measure_interaction');
   expect(instructions).toContain('Call compare_baseline with that label');
@@ -96,7 +96,7 @@ test('a label nobody measured: the error says what has been measured', async () 
     path.replace(/\.json$/, '.recipe.json'),
     JSON.stringify({
       schemaVersion: 1,
-      kind: 'playwright-jankless-recipe',
+      kind: 'jankless-recipe',
       request: {
         url: 'http://localhost:5173/',
         steps: [{ action: 'click', selector: '#sort' }],
@@ -166,7 +166,7 @@ test('compare_baseline with a recipe that can no longer run says what is wrong w
     resultPath(results, 'old check').replace(/\.json$/, '.recipe.json'),
     JSON.stringify({
       schemaVersion: 1,
-      kind: 'playwright-jankless-recipe',
+      kind: 'jankless-recipe',
       request: { url: 'http://localhost:4173/', label: 'old check', steps: [] },
     }),
   );

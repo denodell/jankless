@@ -8,12 +8,23 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  measureAdhoc,
+  measureAdhoc as measureWith,
   readRecipe,
-  remeasure,
+  remeasure as remeasureWith,
+  type AdhocHooks,
   type AdhocRequest,
-} from '../../packages/playwright-jankless/src/adhoc.js';
-import { main } from '../../packages/playwright-jankless/src/cli.js';
+  type BaselineUse,
+} from '../../packages/jankless/src/adhoc.js';
+import { main as cli } from '../../packages/jankless/src/cli/cli.js';
+import { adapter } from '../../packages/playwright-jankless/src/adapter.js';
+
+// The Playwright adapter from src/, as the tests run the rest from src/. Finding an installed
+// adapter is covered by the built commands, in tests/e2e.
+const measureAdhoc = (request: AdhocRequest, hooks: AdhocHooks = {}) =>
+  measureWith(request, { ...hooks, adapter });
+const remeasure = (label: string, overrides: { dir?: string; baseline?: BaselineUse } = {}) =>
+  remeasureWith(label, overrides, { adapter });
+const main = (argv: string[]) => cli(argv, { adapter });
 import { createServer } from '../../packages/jankless-mcp/src/server.js';
 
 test.setTimeout(120_000);
@@ -226,7 +237,7 @@ test('npx playwright-jankless measure: text, JSON, and the exit code', async ({ 
 });
 
 test('the MCP server: measure, change, compare, then ask where the time went', async ({ baseURL }) => {
-  const server = createServer({ dir });
+  const server = createServer({ dir, adapter });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: 'test', version: '0' });
   await Promise.all([server.connect(serverSide), client.connect(clientSide)]);

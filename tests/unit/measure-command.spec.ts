@@ -1,7 +1,7 @@
-// npx playwright-jankless measure: its arguments and exit code. The measuring is in tests/integration.
+// npx jankless measure: its arguments and exit code. The measuring is in tests/integration.
 import { test, expect } from '@playwright/test';
-import { main } from '../../packages/playwright-jankless/src/cli.js';
-import { exitCodeOf, parseMeasureArgs } from '../../packages/playwright-jankless/src/measure-command.js';
+import { main } from '../../packages/jankless/src/cli/cli.js';
+import { exitCodeOf, parseMeasureArgs } from '../../packages/jankless/src/cli/measure-command.js';
 
 const URL = 'http://localhost:5173/products';
 
@@ -167,7 +167,7 @@ test('--help prints the usage and succeeds', async () => {
   expect(parseMeasureArgs(['--help'])).toBeNull();
   const r = await cli('measure', '--help');
   expect(r.code).toBe(0);
-  expect(r.out).toContain('Usage: npx playwright-jankless measure <url> [steps] [options]');
+  expect(r.out).toContain('Usage: npx jankless measure <url> [steps] [options]');
   expect((await cli('--help')).out).toContain('measure     Measure an interaction or a scroll');
 });
 
@@ -175,7 +175,7 @@ test('a mistake fails with the message and where to find the options, and opens 
   const none = await cli('measure', URL);
   expect(none.code).toBe(1);
   expect(none.err).toContain('Give the steps to measure');
-  expect(none.err).toContain('Run npx playwright-jankless measure --help for the options.');
+  expect(none.err).toContain('Run npx jankless measure --help for the options.');
 
   const badUrl = await cli('measure', 'products', '--click', '#a');
   expect(badUrl.code).toBe(1);

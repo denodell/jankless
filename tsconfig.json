@@ -3,7 +3,8 @@
   "compilerOptions": {
     "paths": {
       "jankless": ["./packages/jankless/src/index.ts"],
-      "playwright-jankless/adhoc": ["./packages/playwright-jankless/src/adhoc.ts"]
+      "jankless/adhoc": ["./packages/jankless/src/adhoc.ts"],
+      "jankless/cli": ["./packages/jankless/src/cli/cli.ts"]
     }
   },
   "include": ["packages/*/src", "packages/*/tsup.config.ts", "tests", "playwright.config.ts"],

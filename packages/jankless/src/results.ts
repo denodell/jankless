@@ -1,7 +1,8 @@
 // Reading a Playwright run's jankless results back from its output folder.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import type { JanklessResult, ReportEntry } from 'jankless';
+import type { ReportEntry } from './reporter/markdown.js';
+import type { JanklessResult } from './types.js';
 
 export function filesEndingIn(dir: string, ending: string): string[] {
   if (!existsSync(dir)) return [];

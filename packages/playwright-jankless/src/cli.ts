@@ -1,41 +1,25 @@
+// npx playwright-jankless <command>: the same commands as `npx jankless` (the engine's), with
+// this package as the adapter. It adds two that need Playwright:
 // npx playwright-jankless calibrate [--runs 5] [--out jankless-calibration.json] [-- <playwright test args>]
-// npx playwright-jankless summary [--results test-results] [--out <file>] [--title <title>] [--github-summary]
-// npx playwright-jankless brief [--results test-results] [--out <file>]
 // npx playwright-jankless init-agents [--dir <folder>]... [--no-agents-md]
-// npx playwright-jankless measure <url> [steps | --scroll <selector>] [options]  (measure-command.ts)
 import { parseArgs } from 'node:util';
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { join, relative } from 'node:path';
 import {
   CALIBRATE_ENV,
   TOOL_NAME,
-  buildMarkdown,
   calibrate,
   formatCalibration,
   forwardSlashes,
+  type AdapterCommand,
   type JanklessResult,
 } from 'jankless';
+import { jsonFiles } from 'jankless/cli';
 import { PACKAGE_NAME } from './constants.js';
 import { SKILL_DIRS, initAgents } from './init-agents.js';
-import { measureCommand } from './measure-command.js';
-import { filesEndingIn, jsonFiles, latestAttempts, readResults } from './results.js';
-
-export { readResults };
-
-const HELP = `Usage: npx ${PACKAGE_NAME} <command> [options]
-
-Commands:
-  calibrate   How much each check varies between runs, with a suggested maxIncrease
-  summary     The Markdown summary of the last run, from its result files
-  brief       Every fix brief from the last run, in one document for a coding agent
-  init-agents  Add the skill that teaches coding agents to fix what the checks find
-  measure     Measure an interaction or a scroll on a running page, with no spec file
-
-Run a command with --help for its options.
-`;
 
 const CALIBRATE_HELP = `Usage: npx ${PACKAGE_NAME} calibrate [options] [-- <playwright test arguments>]
 
@@ -65,78 +49,6 @@ function collect(outputDir: string): Map<string, JanklessResult> {
     }
   }
   return results;
-}
-
-const SUMMARY_HELP = `Usage: npx ${PACKAGE_NAME} summary [options]
-
-Writes the Markdown summary of the last run from its result files, the same summary the
-reporter writes, for runs that didn't use the reporter.
-
-Options:
-  --results <dir>    Playwright's output directory (default test-results)
-  --out <file>       Where to write it (default <results>/jankless/summary.md)
-  --title <title>    The summary's heading (default Jankless)
-  --github-summary   Also add it to the GitHub Actions job summary
-  --help             Show this help
-`;
-
-const BRIEF_HELP = `Usage: npx ${PACKAGE_NAME} brief [options]
-
-Prints every fix brief from the last run as one document, for a coding agent. A brief is
-written next to each check that got worse or missed its budget.
-
-Options:
-  --results <dir>   Playwright's output directory (default test-results)
-  --out <file>      Write it to a file instead of printing it
-  --help            Show this help
-`;
-
-export function collectBriefs(results: string): string {
-  const briefs = latestAttempts(filesEndingIn(join(results, 'jankless'), '.fix.md')).map((f) =>
-    readFileSync(f, 'utf8').trimEnd(),
-  );
-  if (!briefs.length) return '';
-  const head =
-    briefs.length === 1
-      ? ''
-      : `# ${briefs.length} jankless checks to fix\n\nEach section is one check. Fix and re-run them one at a time.\n\n`;
-  return (
-    head +
-    briefs
-      .map((b) =>
-        briefs.length === 1 ? b : b.replace(/^# /gm, '## ').replace(/^## (?!Fix brief)/gm, '### '),
-      )
-      .join('\n\n') +
-    '\n'
-  );
-}
-
-function brief(args: string[]): number {
-  const { values } = parseArgs({
-    args,
-    options: {
-      results: { type: 'string', default: 'test-results' },
-      out: { type: 'string' },
-      help: { type: 'boolean' },
-    },
-  });
-  if (values.help) {
-    console.log(BRIEF_HELP);
-    return 0;
-  }
-  const md = collectBriefs(values.results!);
-  if (!md) {
-    console.error('No fix briefs: no jankless check got worse or missed its budget in the last run.');
-    return 0;
-  }
-  if (values.out) {
-    mkdirSync(dirname(values.out), { recursive: true });
-    writeFileSync(values.out, md);
-    console.error(`Fix briefs written to ${values.out}`);
-  } else {
-    process.stdout.write(md);
-  }
-  return 0;
 }
 
 const INIT_AGENTS_HELP = `Usage: npx ${PACKAGE_NAME} init-agents [options]
@@ -174,47 +86,7 @@ function initAgentsCommand(args: string[]): number {
   return 0;
 }
 
-function summary(args: string[]): number {
-  const { values } = parseArgs({
-    args,
-    options: {
-      results: { type: 'string', default: 'test-results' },
-      out: { type: 'string' },
-      title: { type: 'string' },
-      'github-summary': { type: 'boolean' },
-      help: { type: 'boolean' },
-    },
-  });
-  if (values.help) {
-    console.log(SUMMARY_HELP);
-    return 0;
-  }
-  const entries = readResults(values.results!);
-  const out = values.out ?? join(values.results!, 'jankless', 'summary.md');
-  const md = buildMarkdown(entries, values.title);
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, md);
-  const jobSummary = process.env.GITHUB_STEP_SUMMARY;
-  if (values['github-summary'] && jobSummary) appendFileSync(jobSummary, md + '\n');
-  console.log(`Jankless summary of ${entries.length} result(s): ${out}`);
-  return 0;
-}
-
-/** `measure` opens a browser, so it returns a promise of its exit code; the other commands return theirs at once. */
-export function main(argv: string[]): number | Promise<number> {
-  const [command, ...rest] = argv;
-  if (!command || command === '--help' || command === '-h') {
-    console.log(HELP);
-    return command ? 0 : 1;
-  }
-  if (command === 'measure') return measureCommand(rest);
-  if (command === 'summary') return summary(rest);
-  if (command === 'brief') return brief(rest);
-  if (command === 'init-agents') return initAgentsCommand(rest);
-  if (command !== 'calibrate') {
-    console.error(`Unknown command '${command}'.\n\n${HELP}`);
-    return 1;
-  }
+function calibrateCommand(rest: string[]): number {
   const dash = rest.indexOf('--');
   const own = dash < 0 ? rest : rest.slice(0, dash);
   const passthrough = dash < 0 ? [] : rest.slice(dash + 1);
@@ -286,3 +158,15 @@ export function main(argv: string[]): number | Promise<number> {
   console.log(`Written to ${values.out}`);
   return 0;
 }
+
+/** The commands this adapter adds to the `jankless` command line. */
+export const commands: Record<string, AdapterCommand> = {
+  calibrate: {
+    summary: 'How much each check varies between runs, with a suggested maxIncrease',
+    run: calibrateCommand,
+  },
+  'init-agents': {
+    summary: 'Add the skill that teaches coding agents to fix what the checks find',
+    run: initAgentsCommand,
+  },
+};
