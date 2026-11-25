@@ -32,6 +32,18 @@ document.getElementById('leave').addEventListener('click', function onLeave() {
   location.href = '/search.html';
 });
 
+// Does its work in a timer, ?delay= ms after the click (default 300), as a debounced handler or
+// a save that waits for a response does. The click itself paints straight away.
+document.getElementById('later').addEventListener('click', function onLaterClick() {
+  setTimeout(
+    function onLaterTimer() {
+      busyWait(clickMs);
+      status.textContent = 'saved';
+    },
+    param('delay', 300),
+  );
+});
+
 // ?hostile=1: reading the heavy button's id throws, as some framework proxies and broken
 // polyfills do. The collector must survive this without losing the entry.
 if (param('hostile', 0)) {

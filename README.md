@@ -108,6 +108,14 @@ If the list never moves, for example because the locator isn't the element that 
 
 When a full-mode `measure()` or `scroll()` check gets worse, a video of one run is attached to the test in the Playwright report, played at a quarter of real speed. Under the recording it shows the frame rate at each moment, in red while frames are being dropped, beside a chart of the frame rate across the run with the elapsed time under the playhead. For `scroll()`, a frame where the list is blank is outlined and tagged. `replay: 'on'` attaches one every time, and `'off'` never does. Each full-mode check makes one extra run to record its replay, because recording takes compositor time, and that run is never counted. `'off'` skips it.
 
+### Measure without a test
+
+```bash
+npx playwright-butter measure http://localhost:5173/products --click "#filters"
+```
+
+`measure` opens a running page, does the steps or a `--scroll`, and compares the result with the last one recorded under the same label, so you can check a change before there's a spec for it. The first line of its output says whether the page is less smooth, smoother, or shows no clear change. [Measure without a test](docs/ad-hoc.md) covers the steps and options.
+
 ## Baselines
 
 The first run records a baseline next to your test, the way `toMatchSnapshot()` does, and passes. Later runs compare with it, and `npx playwright test --update-snapshots` records it again: `=all` replaces every baseline, `=changed` only those that got worse, and `=none` never writes. Renaming a test starts a new baseline.
@@ -175,6 +183,15 @@ adds a skill that teaches coding agents what to do with a brief: which number to
 The skill also ships in the package at `skills/playwright-butter/`, where [TanStack Intent](https://tanstack.com/intent/latest) and [skills-npm](https://github.com/antfu/skills-npm) find it on their own. With either of those, the skill always matches the installed version and there's nothing to rerun.
 
 The skill was checked by having an agent fix the slow version of each [demo app](demos/README.md#the-agent-skill-checked-against-them) from its brief alone: all seven came back at or near the fast version's numbers.
+
+### The MCP server
+
+[`playwright-butter-mcp`](packages/playwright-butter-mcp) gives a coding agent the same measurements as tools. The agent measures an interaction before it changes anything, makes its change, and measures again to find out whether the page got smoother. It can also ask which functions used the most CPU.
+
+```bash
+npm install -D playwright-butter-mcp
+claude mcp add --transport stdio playwright-butter -- npx playwright-butter-mcp
+```
 
 ## Budgets
 
@@ -270,6 +287,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 - Headless Chrome runs at 60Hz, so 120Hz numbers are a prediction.
 - Event Timing doesn't report interactions under 16ms, so `input.interactions` only counts slower ones.
 - An action that navigates to a new page can't be measured, and the result says so.
+- Work that starts more than a second after an input, such as a slow fetch that renders when it returns, isn't counted as that input's work. `measure()` also stops collecting half a second after the action's last input, so an action whose work starts later wants to wait for its result, with an `expect` on what appears.
 - A page whose main thread is already busy for the whole interaction can't measurably get worse: added work takes time from the page's own rendering instead of adding to it, and only the CPU profile shows it. A development build is often like this with the CPU slowed 4x, so measure a production build. On [Actual](https://github.com/actualbudget/actual)'s transaction list, a planted 3ms per row went unreported in its dev build, and dropped frames on time from 59% to 27% in its production build.
 - A dev server that watches your project, like Vite's, reloads its pages whenever a file it watches is rewritten. `--update-snapshots` rewrites baselines next to your tests while other tests are running, so main-branch CI wants a production build (such as `vite preview`), or the baselines in the dev server's ignored files. Automatic mode keeps its history in `node_modules/.cache`, which dev servers ignore.
 
@@ -278,6 +296,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 - [FAQ](docs/faq.md): suite time, flakiness, requirements, privacy, and how it compares with Lighthouse and real-user monitoring
 - [CI](docs/ci.md): the GitHub Action, the steps it takes for other CI systems, dedicated runners, and full mode on a schedule
 - [Automatic mode](docs/automatic-mode.md): measuring every test with `withButter()`
+- [Measure without a test](docs/ad-hoc.md): `npx playwright-butter measure`, the MCP server, and `playwright-butter/adhoc`
 - [List detection](docs/list-detection.md): how blank rows are found, and replays
 - [Frameworks](docs/frameworks.md): React, Angular, and naming your handler through the CPU profile
 - [How it works](docs/how-it-works.md): the browser signals used, how frames are classified, and how baselines are compared
@@ -292,7 +311,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Packages
 
-This repository publishes two packages. `playwright-butter` is the one to install. It depends on [`butter-churn`](packages/butter-churn), the measuring engine, which other browser libraries can drive through a small adapter.
+This repository publishes three packages. `playwright-butter` is the one to install. It depends on [`butter-churn`](packages/butter-churn), the measuring engine, which other browser libraries can drive through a small adapter. [`playwright-butter-mcp`](packages/playwright-butter-mcp) is the MCP server for coding agents, and it's the only one with third-party dependencies.
 
 ## License
 

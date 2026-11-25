@@ -1,15 +1,16 @@
 # Documentation
 
-| Page                                       | What it covers                                                                                                      |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| [faq.md](faq.md)                           | Before you adopt it: suite time, flakiness, requirements, privacy, and how it differs from Lighthouse and RUM       |
-| [ci.md](ci.md)                             | Baselines in CI: the GitHub Action, the steps it takes by hand, dedicated runners, full mode on a schedule          |
-| [automatic-mode.md](automatic-mode.md)     | `withButter()`: measuring every test, the rolling history, and its limits                                           |
-| [list-detection.md](list-detection.md)     | How blank rows are detected, the thresholds, and measured results                                                   |
-| [frameworks.md](frameworks.md)             | Attribution with React and Angular, and how the CPU profile names your handler                                      |
-| [how-it-works.md](how-it-works.md)         | The signals used and their limits, how frames are classified, and how baselines are compared                        |
-| [mode-detection.md](mode-detection.md)     | How quick or full mode is chosen                                                                                    |
-| [trace-categories.md](trace-categories.md) | Which trace categories full mode records, and what tracing costs                                                    |
-| [measurements.md](measurements.md)         | The evidence behind the defaults: frame-drop sources, runner noise and hardware, touch on Linux, headless detection |
-| [testing.md](testing.md)                   | Running the tests, and measuring code coverage                                                                      |
-| [releasing.md](releasing.md)               | How a release is made                                                                                               |
+| Page                                       | What it covers                                                                                                        |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| [faq.md](faq.md)                           | Before you adopt it: suite time, flakiness, requirements, privacy, and how it differs from Lighthouse and RUM         |
+| [ci.md](ci.md)                             | Baselines in CI: the GitHub Action, the steps it takes by hand, dedicated runners, full mode on a schedule            |
+| [automatic-mode.md](automatic-mode.md)     | `withButter()`: measuring every test, the rolling history, and its limits                                             |
+| [ad-hoc.md](ad-hoc.md)                     | Measuring a running page with no spec: `npx playwright-butter measure`, the MCP server, and `playwright-butter/adhoc` |
+| [list-detection.md](list-detection.md)     | How blank rows are detected, the thresholds, and measured results                                                     |
+| [frameworks.md](frameworks.md)             | Attribution with React and Angular, and how the CPU profile names your handler                                        |
+| [how-it-works.md](how-it-works.md)         | The signals used and their limits, how frames are classified, and how baselines are compared                          |
+| [mode-detection.md](mode-detection.md)     | How quick or full mode is chosen                                                                                      |
+| [trace-categories.md](trace-categories.md) | Which trace categories full mode records, and what tracing costs                                                      |
+| [measurements.md](measurements.md)         | The evidence behind the defaults: frame-drop sources, runner noise and hardware, touch on Linux, headless detection   |
+| [testing.md](testing.md)                   | Running the tests, and measuring code coverage                                                                        |
+| [releasing.md](releasing.md)               | How a release is made                                                                                                 |

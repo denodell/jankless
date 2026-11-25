@@ -50,6 +50,16 @@
         "default": "./dist/reporter.cjs"
       }
     },
+    "./adhoc": {
+      "import": {
+        "types": "./dist/adhoc.d.ts",
+        "default": "./dist/adhoc.js"
+      },
+      "require": {
+        "types": "./dist/adhoc.d.cts",
+        "default": "./dist/adhoc.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "bin": {

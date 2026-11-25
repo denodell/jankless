@@ -78,6 +78,19 @@ export function unbundle({ rawDir, reportDir, sourcesDir, executedText, isSource
     }
     return originals.get(url);
   };
+  // Source files that some process also loaded as they are (the unit and integration tests import
+  // them directly). V8 lists every function of such a file there, called or not, at its exact
+  // position. A function mapped back from a bundle lands a few characters off, so the report counts
+  // it as a second function, and one a bundle never called would read as uncovered even when
+  // the tests that import the source call it. Those are left out below. A file only ever loaded
+  // from a bundle keeps them: nothing else says which of its functions never ran.
+  const direct = new Set();
+  for (const f of readdirSync(rawDir)) {
+    if (!f.endsWith('.json')) continue;
+    for (const { url } of JSON.parse(readFileSync(join(rawDir, f), 'utf8')).result) {
+      if (isSource(url)) direct.add(url);
+    }
+  }
   let n = 0;
   let mapped = 0;
   let dropped = 0;
@@ -151,6 +164,7 @@ export function unbundle({ rawDir, reportDir, sourcesDir, executedText, isSource
           }
         }
         if (!ranges.length) continue;
+        if (ranges[0].count === 0 && direct.has(target)) continue;
         if (!bySource.has(target)) bySource.set(target, []);
         bySource.get(target).push({ functionName: fn.functionName, isBlockCoverage: fn.isBlockCoverage, ranges });
       }

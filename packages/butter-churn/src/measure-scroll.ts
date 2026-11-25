@@ -48,6 +48,7 @@ export async function measureScroll(
         // Each run starts where the first did, even when a reset doesn't put the list back, as
         // with a custom reset or a page that scrolls itself. With reset: 'none', runs carry on.
         beforeRun: async (run) => {
+          await ctx.beforeRun?.(run);
           if (run === 0) origin = await scrollPosition(target, s);
           else if (ctx.options.reset !== 'none' && origin !== null) {
             await restoreScroll(target, s, origin);

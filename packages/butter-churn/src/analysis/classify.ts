@@ -18,11 +18,20 @@ export const SCROLL_LEAD_MS = 5;
  */
 const INPUT_START_TOLERANCE_MS = 2;
 
+/**
+ * Work an input starts later still belongs to it: a debounced search, a `setTimeout`, a fetch
+ * that renders when it returns. A long frame that starts within this many ms after an
+ * input, an interaction's paint or a scroll event is an interaction frame.
+ */
+export const FOLLOW_UP_MS = 1000;
+
 export interface ClassifyInput {
   loaf: LoafRecord[];
   interactions: Interaction[];
   scrolls: ScrollRecord[];
   loadEventEnd: number;
+  /** When each raw input happened. Event Timing has no entry for an input that painted in under 16ms. */
+  inputs?: number[];
 }
 
 /**
@@ -58,8 +67,10 @@ export function ranBeforeInput(s: LoafScriptRecord, firstUIEventTimestamp: numbe
  *    input-to-paint time already includes.
  * 3. A scroll event fired during it.
  * 4. It started before load finished (plus LOAD_GRACE_MS).
- * 5. An `event-listener` script ran in it (a secondary signal: input the other rules missed).
- * 6. Otherwise, background.
+ * 5. It started within FOLLOW_UP_MS after an input, an interaction's paint or a scroll event: work
+ *    the input started later, with a timer or a promise.
+ * 6. An `event-listener` script ran in it (a secondary signal: input the other rules missed).
+ * 7. Otherwise, background.
  *
  * Before all of these: a frame made only of `setInterval` callbacks is never an interaction frame.
  */
@@ -84,6 +95,14 @@ export function classifyFrame(f: LoafRecord, input: Omit<ClassifyInput, 'loaf'>)
   if (input.scrolls.some((s) => s.t >= f.start - SCROLL_LEAD_MS && s.t <= end)) return 'interaction';
   // loadEventEnd is 0 until the page has finished loading.
   if (input.loadEventEnd === 0 || f.start < input.loadEventEnd + LOAD_GRACE_MS) return 'load';
+  const followsUp = (inputEnd: number) => f.start >= inputEnd && f.start < inputEnd + FOLLOW_UP_MS;
+  if (
+    input.interactions.some((i) => followsUp(i.start + i.duration)) ||
+    input.scrolls.some((s) => followsUp(s.t)) ||
+    (input.inputs ?? []).some(followsUp)
+  ) {
+    return 'interaction';
+  }
   if (
     f.scripts.some(
       (s) =>

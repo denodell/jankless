@@ -8,6 +8,10 @@ Two packages are released together at the same version: `butter-churn` and `play
 4. Tagging the merged commit on `main` with the version, such as `git tag v1.1.0 && git push origin v1.1.0`, starts the release workflow. It checks the tag matches both packages and is on `main`, and runs lint, the type check and the unit tests. It then stages each package that isn't on npm at that version yet, creates the GitHub release from `playwright-butter`'s changelog section, and moves the major tag (`v1`) to the release, which is the tag the GitHub Action is used by.
 5. A staged version isn't public until a maintainer approves it, under the Staged Packages tab on npmjs.com or with `npm stage approve <stage-id>`, with two-factor authentication. `butter-churn` is approved first, since `playwright-butter` depends on it.
 
+## The MCP server
+
+`playwright-butter-mcp` has its own version and isn't in the `fixed` group, so `npx changeset version` bumps it only when a changeset names it. The release workflow doesn't publish it yet. A trusted publisher can only be added to a package that already exists, so its first version has to be published manually with `npm publish` from `packages/playwright-butter-mcp`, after the `playwright-butter` version it depends on is public. After that it can be added to the two loops in `release.yml`.
+
 ## npm access
 
 The workflow stages releases through npm's trusted publishing, so no npm token is stored in GitHub. Each package has a trusted publisher on npmjs.com, under its Settings tab: GitHub Actions, the user `denodell`, the repository `playwright-butter` and the workflow `release.yml`, with direct publishing left off, so the workflow can only stage. A package's first version was published by hand with `npm publish`, because a trusted publisher can only be added to a package that already exists.

@@ -2,22 +2,13 @@
 // npx playwright-butter summary [--results test-results] [--out <file>] [--title <title>] [--github-summary]
 // npx playwright-butter brief [--results test-results] [--out <file>]
 // npx playwright-butter init-agents [--dir <folder>]... [--no-agents-md]
+// npx playwright-butter measure <url> [steps | --scroll <selector>] [options]  (measure-command.ts)
 import { parseArgs } from 'node:util';
 import { spawnSync } from 'node:child_process';
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import {
   CALIBRATE_ENV,
   TOOL_NAME,
@@ -25,11 +16,14 @@ import {
   calibrate,
   formatCalibration,
   forwardSlashes,
-  type ReportEntry,
   type ButterResult,
 } from 'butter-churn';
 import { PACKAGE_NAME } from './constants.js';
 import { SKILL_DIRS, initAgents } from './init-agents.js';
+import { measureCommand } from './measure-command.js';
+import { filesEndingIn, jsonFiles, latestAttempts, readResults } from './results.js';
+
+export { readResults };
 
 const HELP = `Usage: npx ${PACKAGE_NAME} <command> [options]
 
@@ -38,6 +32,7 @@ Commands:
   summary     The Markdown summary of the last run, from its result files
   brief       Every fix brief from the last run, in one document for a coding agent
   init-agents  Add the skill that teaches coding agents to fix what the checks find
+  measure     Measure an interaction or a scroll on a running page, with no spec file
 
 Run a command with --help for its options.
 `;
@@ -55,30 +50,6 @@ Options:
 Example:
   npx ${PACKAGE_NAME} calibrate --runs 5 -- --project=chromium tests/lists.spec.ts
 `;
-
-function filesEndingIn(dir: string, ending: string): string[] {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir).flatMap((f) => {
-    const p = join(dir, f);
-    return statSync(p).isDirectory() ? filesEndingIn(p, ending) : p.endsWith(ending) ? [p] : [];
-  });
-}
-
-const jsonFiles = (dir: string) => filesEndingIn(dir, '.json');
-
-function latestAttempts(files: string[]): string[] {
-  const latest = new Map<string, { retry: number; files: string[] }>();
-  for (const file of files) {
-    const dir = dirname(file);
-    const m = /^(.*)-retry(\d+)$/.exec(basename(dir));
-    const key = m ? join(dirname(dir), m[1]!) : dir;
-    const retry = m ? Number(m[2]) : 0;
-    const seen = latest.get(key);
-    if (!seen || retry > seen.retry) latest.set(key, { retry, files: [file] });
-    else if (retry === seen.retry) seen.files.push(file);
-  }
-  return [...latest.values()].flatMap(({ files }) => files.sort());
-}
 
 function collect(outputDir: string): Map<string, ButterResult> {
   const root = join(outputDir, 'butter');
@@ -108,25 +79,6 @@ Options:
   --github-summary   Also add it to the GitHub Actions job summary
   --help             Show this help
 `;
-
-export function readResults(results: string): ReportEntry[] {
-  const entries: ReportEntry[] = [];
-  for (const file of latestAttempts(jsonFiles(join(results, 'butter')))) {
-    try {
-      const r = JSON.parse(readFileSync(file, 'utf8')) as ButterResult;
-      if (r.schemaVersion !== 1 || typeof r.label !== 'string') continue;
-      entries.push({
-        test: r.test?.title ?? basename(dirname(file)),
-        file: r.test?.file ?? '',
-        project: r.test?.project ?? '',
-        result: r,
-      });
-    } catch {
-      continue;
-    }
-  }
-  return entries;
-}
 
 const BRIEF_HELP = `Usage: npx ${PACKAGE_NAME} brief [options]
 
@@ -248,12 +200,14 @@ function summary(args: string[]): number {
   return 0;
 }
 
-export function main(argv: string[]): number {
+/** `measure` opens a browser, so it returns a promise of its exit code; the other commands return theirs at once. */
+export function main(argv: string[]): number | Promise<number> {
   const [command, ...rest] = argv;
   if (!command || command === '--help' || command === '-h') {
     console.log(HELP);
     return command ? 0 : 1;
   }
+  if (command === 'measure') return measureCommand(rest);
   if (command === 'summary') return summary(rest);
   if (command === 'brief') return brief(rest);
   if (command === 'init-agents') return initAgentsCommand(rest);

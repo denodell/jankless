@@ -140,6 +140,8 @@ export interface DocData {
   /** Which page (tab) it was in, so its next document can be found. */
   page: number;
   lastInput?: StreamBatch['lastInput'];
+  /** When each raw input happened, on the document's clock. */
+  inputs?: number[];
   errors: string[];
 }
 
@@ -222,6 +224,7 @@ export function analyzeDocs(docs: Map<number, DocData>) {
       interactions: di,
       scrolls: d.scrolls,
       loadEventEnd: d.loadEventEnd,
+      inputs: d.inputs,
     });
     interactions.push(...di.map((i) => ({ ...i, url: d.url })));
     classes.push(...dc);
@@ -272,6 +275,7 @@ async function startStreaming(
       d.events.push(...batch.events);
       d.scrolls.push(...batch.scrolls);
       d.errors.push(...batch.errors);
+      if (batch.inputs) (d.inputs ??= []).push(...batch.inputs);
       if (batch.loadEventEnd) d.loadEventEnd = batch.loadEventEnd;
       if (batch.lastInput && (!d.lastInput || batch.lastInput.at >= d.lastInput.at))
         d.lastInput = batch.lastInput;

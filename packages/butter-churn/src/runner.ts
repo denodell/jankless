@@ -81,6 +81,14 @@ const SETTLE_QUIET_MS = 500;
 /** Longest we wait for the page to go quiet. If it never does, the run continues with a note. */
 const SETTLE_TIMEOUT_MS = 5_000;
 
+/**
+ * After the action returns, a run keeps collecting until this long after the last input, so work
+ * the input starts later (a debounced handler, a short timer) is measured too. Shorter than
+ * FOLLOW_UP_MS in classify.ts to keep runs quick: an action that waits for its own result, as
+ * most tests do, covers anything slower.
+ */
+const FOLLOW_UP_WAIT_MS = 500;
+
 /** A replay's recording is scaled down to fit this many CSS pixels on its longer side. */
 const REPLAY_MAX_SIDE = 1280;
 
@@ -128,6 +136,11 @@ function collector(page: PageDriver) {
         [key, quietMs, timeoutMs] as const,
       ),
     flush: () => page.evaluate((k) => (window as unknown as Win)[k]!.flush(), key),
+    followUp: (ms: number) =>
+      page.evaluate(([k, wait]) => (window as unknown as Win)[k as string]!.followUp(wait as number), [
+        key,
+        ms,
+      ] as const),
     snapshot: (from: number, to: number) =>
       page.evaluate(
         ([k, f, t]) => (window as unknown as Win)[k as string]!.snapshot(f as number, t as number),
@@ -386,6 +399,7 @@ async function measureRun(
     start = await c.now();
     await action();
     try {
+      await c.followUp(FOLLOW_UP_WAIT_MS);
       await c.flush();
       end = await c.now();
     } catch {
@@ -536,6 +550,7 @@ function summarizeRun(
     interactions,
     scrolls: snapshot.scrolls,
     loadEventEnd: snapshot.loadEventEnd,
+    inputs: snapshot.inputs,
   });
   const interactionFrames = attributeFrames(
     snapshot.loaf.filter((_, i) => classes[i] === 'interaction'),

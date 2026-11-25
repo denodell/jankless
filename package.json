@@ -4,13 +4,14 @@
   "type": "module",
   "workspaces": [
     "packages/butter-churn",
-    "packages/playwright-butter"
+    "packages/playwright-butter",
+    "packages/playwright-butter-mcp"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm run build --workspace butter-churn --workspace playwright-butter",
+    "build": "npm run build --workspace butter-churn --workspace playwright-butter --workspace playwright-butter-mcp",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
