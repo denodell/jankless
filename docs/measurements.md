@@ -1,6 +1,6 @@
 # Measurements
 
-This file records what the detection suite (`tests/detection/`, raw Playwright with no library code) measures, next to the numbers from the spike. The spike was the prototype this library grew from, and it ran in a single-CPU sandbox on Chrome 141. Each tolerance in the detection suite is explained here.
+This file records what the detection suite (`tests/detection/`, raw Playwright with no library code) measures, next to the results from the spike. The spike was the prototype this library grew from, and it ran in a single-CPU sandbox on Chrome 141. Each tolerance in the detection suite is explained here.
 
 The measurements come from three environments:
 
@@ -10,7 +10,7 @@ The measurements come from three environments:
 | Local          | macOS, Apple Silicon | 1.63.0     | 153.0.8010.12 (Chrome for Testing) | 10 cores                                             |
 | GitHub Actions | `ubuntu-latest`      | 1.63.0     | 153.0.8010.12                      | 4 vCPU, AMD EPYC 9V45, 16GB (PR #1, run 35940477326) |
 
-All numbers are new headless (`channel: 'chromium'`) unless stated.
+All measurements are in new headless mode, with `channel: 'chromium'`, unless stated.
 
 ## Versions and sources
 
@@ -38,7 +38,7 @@ On the GitHub Actions runner the spike's table reproduces exactly, with no sprea
 
 The spike counted every `STATE_DROPPED` frame in the trace from one run. Doing the same on Chrome 153 gave 1 dropped frame at 0ms and 3 at 12ms, which contradicts the spike's table. The raw traces showed three separate causes, and the suite now handles each one. The GitHub Actions run shows that causes 2 and 3 only happen on the Mac (see the note after each). The suite keeps all three fixes anyway, because they're cheap, they're correct in principle, and developers run the suite locally.
 
-1. Starting a trace adds a dropped frame. In most runs, one `STATE_DROPPED` frame lands about 550ms before the first input, when tracing starts. The suite only counts frames inside the input window, from the first input's `EventLatency` to the last one plus 150ms (`INPUT_TAIL_MS`). The library also limits trace frames to the interaction, using in-page marks. _(Found later: the frame belongs to Playwright's initial `about:blank` document, which has its own compositor, so it comes from neither tracing nor the page. See [trace-categories.md](trace-categories.md).)_
+1. Starting a trace adds a dropped frame. In most runs, one `STATE_DROPPED` frame appears about 550ms before the first input, when tracing starts. The suite only counts frames inside the input window, from the first input's `EventLatency` to the last one plus 150ms (`INPUT_TAIL_MS`). The library also limits trace frames to the interaction, using in-page marks. _(Found later: the frame belongs to Playwright's initial `about:blank` document, which has its own compositor, so it comes from neither tracing nor the page. See [trace-categories.md](trace-categories.md).)_
 2. The first wheel on a page takes a 46–58ms frame, with no page work at all (three runs: 46, 58, 46ms). After one warm-up wheel the long frame is gone (longest frame 18–20ms). The suite makes one warm-up wheel before measuring, and this is why `measure()` makes a warm-up run first. _GitHub Actions:_ after the warm-up, the longest frame with no work was 16.5ms. The same effect on the first click didn't appear on the runner at all (see [Event Timing and LoAF](#event-timing-and-loaf)), so it's at least partly a Mac effect. The warm-up run stays for developer machines.
 3. Single runs are noisy because they have very few frames. Each wheel tick presents about one frame (12–14 presented frames per run), so one stray pair of drops moves a run a lot. At 12ms blocking, one run of five dropped 7 frames and the other four dropped 0. Gating on one run's drop count would be flaky on a developer machine, so the suite takes the median of 5 traced runs, and the library does the same with `runs: 5`. _GitHub Actions:_ there was no spread across five runs at any blocking level, so the runner doesn't need the median. It stays for local runs.
 
@@ -51,7 +51,7 @@ The spike counted every `STATE_DROPPED` frame in the trace from one run. Doing t
 - 25ms: median trace drops > 0. LoAF at most 1 of 10. rAF timestamps 0 late.
 - 40ms and 70ms: median trace drops > 0; LoAF and rAF timestamps flag at least 8 of 10.
 - Across rows: 25ms > 0ms, 70ms > 12ms, and 70ms ≥ 25ms, all on medians.
-- The LoAF column only counts long frames in which the scroll handler ran. On 2026-09-26, a 12ms run on the fastest runner model (EPYC 9V45) saw two unrelated long frames during the scrolls. They're recorded as `loafOther` and aren't counted as the handler.
+- The LoAF column only counts long frames in which the scroll handler ran. On 2026-09-26, a 12ms run on the fastest runner model (EPYC 9V45) had two unrelated long frames during the scrolls. They're recorded as `loafOther` and aren't counted as the handler.
 - LoAF allows one handler frame at 12ms and 25ms. On a busy runner, the handlers for several wheel events can run in the same frame, and four 12ms handlers plus rendering go past 50ms. That happened once in a CI run on 2026-09-26. Even then, the column misses the handler in at least 9 of 10 scrolls.
 
 ## Event Timing and LoAF
@@ -68,7 +68,7 @@ The spike counted every `STATE_DROPPED` frame in the trace from one run. Doing t
 | Wheel scrolling in Event Timing | none                                            | none; scroll listener saw ≥10 events      |
 | Idle page                       | 0 LoAF                                          | 0                                         |
 
-The first interaction on a page reads high on the Mac but not on the runner. With a 25ms handler, the local Mac measured the first click at 56ms, with a LoAF entry, and the next three at 24ms. GitHub Actions measured all four at 24ms with no LoAF entry, so the effect comes from the machine rather than from Chrome. Automatic mode measures each test once, so on a developer machine a test's first interaction may read high. CI runners, where histories come from, aren't affected (see Limitations in [automatic-mode.md](automatic-mode.md)).
+The first interaction on a page reads high on the Mac but not on the runner. With a 25ms handler, the local Mac measured the first click at 56ms, with a LoAF entry, and the next three at 24ms. GitHub Actions measured all four at 24ms with no LoAF entry, so the effect comes from the machine rather than from Chrome. Automatic mode measures each test once, so on a developer machine a test's first interaction may measure high. CI runners, where histories come from, aren't affected (see Limitations in [automatic-mode.md](automatic-mode.md)).
 
 ## CPU throttling
 
@@ -118,7 +118,7 @@ This had two effects on the library:
 ## Refresh rate and AnimationFrame
 
 - Frames per second with rAF in new headless: 60 by default, 57 with `--disable-frame-rate-limit`, and 60 with `--disable-gpu-vsync` (GitHub Actions: 60, 58, 61). As the spike found, the flags don't raise the rate.
-- AnimationFrame events after a warm-up wheel, locally: at 0ms blocking, 31 frames, 17 over 8.33ms, 3 over 16.7ms, longest 17.4ms. At 25ms blocking, 10 over 16.7ms, longest 42.8ms. On GitHub Actions: at 0ms, 10 of 31 over 8.33ms, none over 16.7ms, longest 16.5ms. At 25ms, 10 over 16.7ms, longest 25.2ms. None were over 50ms on either machine, so LoAF wouldn't see any of them. As in the spike, many frames take more than 8.33ms with no work, which is why the 120Hz budget is reported but not gated.
+- AnimationFrame events after a warm-up wheel, locally: at 0ms blocking, 31 frames, 17 over 8.33ms, 3 over 16.7ms, longest 17.4ms. At 25ms blocking, 10 over 16.7ms, longest 42.8ms. On GitHub Actions: at 0ms, 10 of 31 over 8.33ms, none over 16.7ms, longest 16.5ms. At 25ms, 10 over 16.7ms, longest 25.2ms. None were over 50ms on either machine, so LoAF wouldn't report any of them. As in the spike, many frames take more than 8.33ms with no work, which is why the 120Hz budget is reported but not gated.
 
 ## Fast scroll through a long list
 
@@ -153,7 +153,7 @@ This had two effects on the library:
 | `synthesizeScrollGesture`, mouse source                  | 2,000px | 2,000px                 |
 | `Input.dispatchTouchEvent`: one 380px drag, then release | 544px   | 572px                   |
 
-`input: 'touch'` is built from real touch events instead. It makes repeated swipes (press, drag across 60% of the list at the requested speed, release, and let the list keep moving on its own) until the distance is covered, and it behaves the same on both platforms. The problem was found because the React example's "cheap list stays drawn" check passed on CI with 0% blank frames while the list didn't scroll at all. Since then, `scroll()` also reports list data as unavailable when no run moved the list.
+`input: 'touch'` is built from real touch events instead. It makes repeated swipes (press, drag across 60% of the list at the requested speed, release, and let the list keep moving after the release) until the distance is covered, and it behaves the same on both platforms. The problem was found because the React example's "cheap list stays drawn" check passed on CI with 0% blank frames while the list didn't scroll at all. Since then, `scroll()` also reports list data as unavailable when no run moved the list.
 
 ## Headless-mode detection
 

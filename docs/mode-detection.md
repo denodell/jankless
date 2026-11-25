@@ -7,7 +7,7 @@ Quick mode measures with Event Timing and Long Animation Frames. Full mode adds 
 The first rule that applies wins:
 
 1. The `mode` option, from `test.use({ janklessOptions: { mode } })`, the config's `use`, or a per-call override such as `jankless.measure(label, fn, { mode: 'full' })`.
-2. `JANKLESS_MODE`, set to `quick` or `full` (case-insensitive). Any other value is an error, so a typo can't silently pick a mode.
+2. `JANKLESS_MODE`, set to `quick` or `full`, in any letter case. Any other value is an error, so a typo can't silently pick a mode.
 3. A scheduled CI run gets `full`:
 
    | CI provider     | Variable                         | Value                |
@@ -21,4 +21,4 @@ The first rule that applies wins:
 
 Every result records the chosen mode as `mode`, and the rule that chose it as `settings.modeSource`.
 
-The rules are implemented in `packages/jankless/src/options.ts` (`detectMode`) and tested in `tests/unit/options.spec.ts`.
+The rules are implemented by `detectMode` in `packages/jankless/src/options.ts` and tested in `tests/unit/options.spec.ts`.

@@ -2,8 +2,8 @@
 
 A baseline only means something on the machine that gates, so in CI the baselines come from CI runs on your main branch, never from developer laptops:
 
-1. On the main branch, the suite runs with `JANKLESS_RECORD_BASELINES=1`. Each check still compares with the baselines main had, then records this run's result as the new baseline, into the folder `baselineDir` points at. That folder is uploaded as an artifact.
-2. On pull requests, the latest artifact from main is downloaded into a folder, and `baselineDir` points at it. Each check then compares against main.
+1. On the main branch, the suite runs with `JANKLESS_RECORD_BASELINES=1`. Each check still compares with the baselines main had, then records this run's result as the new baseline, into the folder that `baselineDir` names. That folder is uploaded as an artifact.
+2. On pull requests, the latest artifact from main is downloaded into a folder, and `baselineDir` is set to that folder. Each check then compares against main.
 
 `baselineDir` mirrors your snapshot layout: a baseline at `<snapshotDir>/<path>` is looked for at `<baselineDir>/<path>` first. Baselines are matched on CPU model, so an artifact built on one hosted-runner CPU won't be used on another. Main starts from the previous artifact before recording, so each CPU model's files are kept, and a dedicated runner avoids the problem.
 
@@ -33,7 +33,7 @@ The job needs `permissions: { contents: read, pull-requests: write, actions: rea
 
 `setup` has a `record` output, `true` when the run records baselines, and `report` has a `summary` output with the summary's path. Uploading results and replays is left to your workflow, since most already upload `test-results` or the Playwright report.
 
-## The GitHub Action on its own
+## The GitHub Action as one step
 
 For a new workflow, the Action can run the suite too, in one step:
 
@@ -65,7 +65,7 @@ Automatic mode's history is kept in the same artifact, so tests wrapped with `wi
 
 | Input                   | Default                  | Description                                                                                |
 | ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
-| `command`               | `npx playwright test`    | How to run the suite.                                                                      |
+| `command`               | `npx playwright test`    | The command that runs the suite.                                                           |
 | `working-directory`     | `.`                      | The folder to run in, for a monorepo.                                                      |
 | `results-dir`           | `test-results`           | Playwright's output directory.                                                             |
 | `comment`               | `true`                   | Post the summary on the pull request.                                                      |
@@ -74,9 +74,9 @@ Automatic mode's history is kept in the same artifact, so tests wrapped with `wi
 | `results-artifact-name` | a name unique to the job | The name results and replays are uploaded under.                                           |
 | `token`                 | `github.token`           | Needs `actions: read` to fetch baselines and `pull-requests: write` to comment.            |
 
-The Action's outputs are `outcome` (`passed` or `failed`) and `summary` (the summary's path). Pull requests from forks get a read-only token, so they're compared but not commented on, and the summary is still in the job summary. The `snapshot-dir` input from 1.0.0 is no longer used.
+The Action's outputs are `outcome`, which is `passed` or `failed`, and `summary`, which is the summary's path. Pull requests from forks get a read-only token, so they're compared but not commented on, and the summary is still in the job summary. The `snapshot-dir` input from 1.0.0 is no longer used.
 
-## By hand
+## The same steps without the Action
 
 These are the steps the Action takes, for other CI systems or a workflow of your own.
 
@@ -134,7 +134,7 @@ jobs:
 
 ### Post the summary on the pull request
 
-With the reporter in your config (`reporter: [['list'], ['playwright-jankless/reporter']]`), each run adds the jankless summary to the GitHub Actions job summary. Without it, `npx playwright-jankless summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
+With the reporter in your config, as `reporter: [['list'], ['playwright-jankless/reporter']]`, each run adds the jankless summary to the GitHub Actions job summary. Without it, `npx playwright-jankless summary --github-summary` writes the same summary from the run's result files. This step also posts it as a comment on the pull request:
 
 ```yaml
 - name: 'Pull request: comment with the summary'
@@ -148,13 +148,13 @@ The job needs `permissions: pull-requests: write`. `--edit-last` updates the pre
 
 ### Run full mode on a schedule
 
-Scheduled runs use full mode automatically ([mode detection](mode-detection.md)), and full-mode baselines are kept separately from quick-mode ones. Adding a `schedule:` trigger under `on:` is all it takes: a scheduled run on the default branch has `github.ref` set to `refs/heads/main`, so the "Main" step compares with the last scheduled run's baselines, then records, and the artifact carries both quick-mode and full-mode baselines.
+Scheduled runs use full mode automatically, as [mode detection](mode-detection.md) describes, and full-mode baselines are kept separately from quick-mode ones. Adding a `schedule:` trigger under `on:` is the only change needed: a scheduled run on the default branch has `github.ref` set to `refs/heads/main`, so the "Main" step compares with the last scheduled run's baselines, then records, and the artifact contains both quick-mode and full-mode baselines.
 
 ## Use a dedicated runner if you can
 
-GitHub's hosted `ubuntu-latest` runners landed on three different AMD EPYC models in this project's CI, with up to 1.5x difference in speed ([measurements.md](measurements.md) has the numbers). The recipe still works on hosted runners, because the artifact collects a baseline per CPU model over time. A pull request that lands on a model with no baseline yet isn't compared, and its result says "No baseline for this machine".
+GitHub's hosted `ubuntu-latest` runners were three different AMD EPYC models in this project's CI, with up to 1.5x difference in speed. [measurements.md](measurements.md) has the figures. The recipe still works on hosted runners, because the artifact collects a baseline per CPU model over time. A pull request that runs on a model with no baseline yet isn't compared, and its result says "No baseline for this machine".
 
-A self-hosted or larger dedicated runner (`runs-on: [self-hosted, linux]`, or a GitHub larger runner) runs every job on the same hardware, so every check is compared every time. The tests measure CPU time, so other work on that machine while they run makes the numbers noisier.
+A self-hosted or larger dedicated runner, such as `runs-on: [self-hosted, linux]` or a GitHub larger runner, runs every job on the same hardware, so every check is compared every time. The tests measure CPU time, so other work on that machine while they run makes the results noisier.
 
 ## Recipe tests
 

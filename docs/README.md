@@ -3,7 +3,7 @@
 | Page                                       | What it covers                                                                                                      |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | [faq.md](faq.md)                           | Before you adopt it: suite time, flakiness, requirements, privacy, and how it differs from Lighthouse and RUM       |
-| [ci.md](ci.md)                             | Baselines in CI: the GitHub Action, the steps it takes by hand, dedicated runners, full mode on a schedule          |
+| [ci.md](ci.md)                             | Baselines in CI: the GitHub Action, the same steps without the Action, dedicated runners, full mode on a schedule   |
 | [automatic-mode.md](automatic-mode.md)     | `withJankless()`: measuring every test, the rolling history, and its limits                                         |
 | [ad-hoc.md](ad-hoc.md)                     | Measuring a running page with no spec: `npx jankless measure`, the MCP server, and `jankless/adhoc`                 |
 | [list-detection.md](list-detection.md)     | How blank rows are detected, the thresholds, and measured results                                                   |

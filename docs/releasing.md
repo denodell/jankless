@@ -1,6 +1,6 @@
 # Releasing
 
-Two packages are released together at the same version: `jankless` and `playwright-jankless`. Versions come from [changesets](https://github.com/changesets/changesets), which keeps the two in step (the `fixed` group in `.changeset/config.json`). Publishing is done by the release workflow, `.github/workflows/release.yml`, when a version tag is pushed.
+Two packages are released together at the same version: `jankless` and `playwright-jankless`. Versions come from [changesets](https://github.com/changesets/changesets), which keeps the two in step through the `fixed` group in `.changeset/config.json`. Publishing is done by the release workflow, `.github/workflows/release.yml`, when a version tag is pushed.
 
 1. Each user-facing change gets a changeset in its pull request. `npx changeset` asks for patch, minor or major and writes a file to `.changeset/`.
 2. When it's time to release, `npx changeset version` bumps both `package.json` files and adds the pending changesets to each package's `CHANGELOG.md`. The changelogs can be edited for readability before the version bump is merged to `main`.

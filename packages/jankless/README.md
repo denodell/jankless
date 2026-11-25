@@ -32,4 +32,4 @@ The engine looks for the packages in `ADAPTER_PACKAGES`, in order: `playwright-j
 
 ## License
 
-MIT. The replay panel's font, Archivo, is included under the SIL Open Font License 1.1 (`ARCHIVO-OFL.txt`).
+MIT. The replay panel's font, Archivo, is included under the SIL Open Font License 1.1, in `ARCHIVO-OFL.txt`.
