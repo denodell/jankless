@@ -1,19 +1,19 @@
 # jankless-mcp
 
-An [MCP](https://modelcontextprotocol.io) server for [playwright-jankless](https://github.com/denodell/jankless#readme). It lets a coding agent measure how smooth an interaction or a scroll is on a running page, and find out whether its change made the page better or worse, without writing a spec file.
+An [MCP](https://modelcontextprotocol.io) server for [Jankless](https://github.com/denodell/jankless#readme). It lets a coding agent measure how smooth an interaction or a scroll is on a running page, and find out whether its change made the page better or worse, without writing a spec file.
 
 ## Install
 
 ```bash
-npm install -D jankless-mcp
+npm install -D jankless-mcp playwright-jankless
 ```
 
-It needs Node 20 or later, `@playwright/test` 1.49 or later, and Playwright's Chromium (`npx playwright install chromium`).
+The server depends on the measuring engine only. A browser adapter opens the page and does the steps, and `playwright-jankless` is that adapter, so it's installed in the project too. It needs Node 20 or later, `@playwright/test` 1.49 or later, and Playwright's Chromium (`npx playwright install chromium`).
 
 Then add the server to your agent. In Claude Code:
 
 ```bash
-claude mcp add --transport stdio playwright-jankless -- npx jankless-mcp
+claude mcp add --transport stdio jankless -- npx jankless-mcp
 ```
 
 In a client that takes a JSON configuration, such as Cursor or VS Code:
@@ -21,7 +21,7 @@ In a client that takes a JSON configuration, such as Cursor or VS Code:
 ```json
 {
   "mcpServers": {
-    "playwright-jankless": {
+    "jankless": {
       "command": "npx",
       "args": ["jankless-mcp"]
     }
@@ -65,10 +65,10 @@ A change that's too small to tell from noise is reported as "no clear change", s
 npx jankless-mcp --dir .jankless --results test-results
 ```
 
-| Option            | Default                                         | Description                                                                                |
-| ----------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `--dir <folder>`  | `node_modules/.cache/playwright-jankless/adhoc` | Where baselines and results are kept.                                                      |
-| `--results <dir>` | `test-results`                                  | Playwright's output directory, so the tools can also look up a check from your test suite. |
+| Option            | Default                              | Description                                                                                |
+| ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `--dir <folder>`  | `node_modules/.cache/jankless/adhoc` | Where baselines and results are kept.                                                      |
+| `--results <dir>` | `test-results`                       | Playwright's output directory, so the tools can also look up a check from your test suite. |
 
 The steps, the scroll options, baselines and limits are described in [Measure without a test](https://github.com/denodell/jankless/blob/main/docs/ad-hoc.md). The same measurements are available from the command line as `npx playwright-jankless measure`.
 

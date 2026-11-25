@@ -7,12 +7,12 @@ import { createServer } from './server.js';
 
 const HELP = `Usage: npx jankless-mcp [options]
 
-Starts the playwright-jankless MCP server on standard input and output, for a coding agent.
+Starts the Jankless MCP server on standard input and output, for a coding agent.
 Run it from the project being worked on.
 
 Options:
   --dir <folder>    Where baselines and results are kept (default: the project's
-                    node_modules/.cache/playwright-jankless/adhoc)
+                    node_modules/.cache/jankless/adhoc)
   --results <dir>   Playwright's output directory, for results from tests (default test-results)
   --help            Show this help
 `;

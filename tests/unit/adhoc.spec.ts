@@ -18,7 +18,7 @@ import {
   validateRequest,
   type AdhocOutcome,
   type Verdict,
-} from '../../packages/playwright-jankless/src/adhoc.js';
+} from '../../packages/jankless/src/adhoc.js';
 import { compareMetrics, improved, metricsOf } from '../../packages/jankless/src/baseline/compare.js';
 import { resultPath } from '../../packages/jankless/src/output.js';
 import type { JanklessResult, Comparison } from '../../packages/jankless/src/types.js';
@@ -132,7 +132,7 @@ test('the port is left out, so a dev server on another port keeps its baseline',
 test('files go in the nearest node_modules, which dev servers do not watch', () => {
   mkdirSync(join(dir, 'node_modules'));
   mkdirSync(join(dir, 'apps', 'web'), { recursive: true });
-  const expected = join(dir, 'node_modules', '.cache', 'playwright-jankless', 'adhoc');
+  const expected = join(dir, 'node_modules', '.cache', 'jankless', 'adhoc');
   expect(defaultAdhocDir(dir)).toBe(expected);
   expect(defaultAdhocDir(join(dir, 'apps', 'web'))).toBe(expected);
 });
@@ -141,7 +141,7 @@ test('with no node_modules, files go in the temporary folder, one folder per pro
   mkdirSync(join(dir, 'a', '.git'), { recursive: true });
   mkdirSync(join(dir, 'b', '.git'), { recursive: true });
   const a = defaultAdhocDir(join(dir, 'a'));
-  expect(a.startsWith(join(tmpdir(), 'playwright-jankless-adhoc'))).toBe(true);
+  expect(a.startsWith(join(tmpdir(), 'jankless-adhoc'))).toBe(true);
   expect(defaultAdhocDir(join(dir, 'a'))).toBe(a);
   expect(defaultAdhocDir(join(dir, 'b'))).not.toBe(a);
 });
@@ -153,7 +153,7 @@ function store(result: JanklessResult, recipe?: object) {
   if (recipe) {
     writeFileSync(
       path.replace(/\.json$/, '.recipe.json'),
-      JSON.stringify({ schemaVersion: 1, kind: 'playwright-jankless-recipe', request: recipe }),
+      JSON.stringify({ schemaVersion: 1, kind: 'jankless-recipe', request: recipe }),
     );
   }
 }

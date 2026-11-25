@@ -1,5 +1,5 @@
-// The playwright-jankless MCP server: three tools over playwright-jankless's ad-hoc measurements
-// (playwright-jankless/adhoc), which do the measuring, comparing and wording. This file only
+// The Jankless MCP server: three tools over jankless's ad-hoc measurements
+// (jankless/adhoc), which do the measuring, comparing and wording. This file only
 // describes the tools and passes their arguments on.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
@@ -18,17 +18,20 @@ import {
   type AdhocHooks,
   type AdhocOutcome,
   type AdhocRequest,
-} from 'playwright-jankless/adhoc';
+} from 'jankless/adhoc';
+import type { Adapter } from 'jankless';
 
-export const SERVER_NAME = 'playwright-jankless';
+export const SERVER_NAME = 'jankless';
 
 export interface ServerOptions {
-  /** Where ad-hoc baselines and results are kept. Default: playwright-jankless's own default. */
+  /** Where ad-hoc baselines and results are kept. Default: jankless's own default. */
   dir?: string;
   /** The Playwright output folder to look for test results in. Default `test-results`. */
   results?: string;
   /** The server's version, as reported to clients. */
   version?: string;
+  /** The adapter that opens the browser. Default: the one installed in the project. */
+  adapter?: Adapter;
 }
 
 const INSTRUCTIONS = `Measures how smooth an interaction or a scroll is on a running web page, in Chromium, and whether a change made it better or worse.
@@ -177,10 +180,11 @@ interface CallExtra {
  * Reports each run as it starts, when the client asked for progress. A measurement can take
  * a minute or more, and a client that gets progress can keep waiting instead of timing out.
  */
-function progressHooks(extra: CallExtra): AdhocHooks {
+function progressHooks(extra: CallExtra, adapter: Adapter | undefined): AdhocHooks {
   const progressToken = extra._meta?.progressToken;
-  if (progressToken === undefined) return {};
+  if (progressToken === undefined) return { adapter };
   return {
+    adapter,
     onRun: ({ run, total, warmUp }) => {
       const message = warmUp ? `Warm-up run (1 of ${total})` : `Run ${run} of ${total}`;
       void extra
@@ -222,7 +226,9 @@ export function createServer(options: ServerOptions = {}): McpServer {
     (args, extra) =>
       inTurn(async () => {
         try {
-          return answered(await measureAdhoc({ ...(args as AdhocRequest), dir }, progressHooks(extra)));
+          return answered(
+            await measureAdhoc({ ...(args as AdhocRequest), dir }, progressHooks(extra, options.adapter)),
+          );
         } catch (err) {
           return failed((err as Error).message);
         }
@@ -250,7 +256,11 @@ export function createServer(options: ServerOptions = {}): McpServer {
         try {
           if (readRecipe(label, dir)) {
             return answered(
-              await remeasure(label, { dir, baseline: record ? 'record' : 'compare' }, progressHooks(extra)),
+              await remeasure(
+                label,
+                { dir, baseline: record ? 'record' : 'compare' },
+                progressHooks(extra, options.adapter),
+              ),
             );
           }
           const found = findResult(label, { dir, results });

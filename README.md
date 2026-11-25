@@ -111,7 +111,7 @@ When a full-mode `measure()` or `scroll()` check gets worse, a video of one run 
 ### Measure without a test
 
 ```bash
-npx playwright-jankless measure http://localhost:5173/products --click "#filters"
+npx jankless measure http://localhost:5173/products --click "#filters"
 ```
 
 `measure` opens a running page, does the steps or a `--scroll`, and compares the result with the last one recorded under the same label, so you can check a change before there's a spec for it. The first line of its output says whether the page is less smooth, smoother, or shows no clear change. [Measure without a test](docs/ad-hoc.md) covers the steps and options.
@@ -190,7 +190,7 @@ The skill was checked by having an agent fix the slow version of each [demo app]
 
 ```bash
 npm install -D jankless-mcp
-claude mcp add --transport stdio playwright-jankless -- npx jankless-mcp
+claude mcp add --transport stdio jankless -- npx jankless-mcp
 ```
 
 ## Budgets
@@ -296,7 +296,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 - [FAQ](docs/faq.md): suite time, flakiness, requirements, privacy, and how it compares with Lighthouse and real-user monitoring
 - [CI](docs/ci.md): the GitHub Action, the steps it takes for other CI systems, dedicated runners, and full mode on a schedule
 - [Automatic mode](docs/automatic-mode.md): measuring every test with `withJankless()`
-- [Measure without a test](docs/ad-hoc.md): `npx playwright-jankless measure`, the MCP server, and `playwright-jankless/adhoc`
+- [Measure without a test](docs/ad-hoc.md): `npx jankless measure`, the MCP server, and `jankless/adhoc`
 - [List detection](docs/list-detection.md): how blank rows are found, and replays
 - [Frameworks](docs/frameworks.md): React, Angular, and naming your handler through the CPU profile
 - [How it works](docs/how-it-works.md): the browser signals used, how frames are classified, and how baselines are compared
@@ -311,7 +311,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Packages
 
-This repository publishes three packages. `playwright-jankless` is the one to install. It depends on [`jankless`](packages/jankless), the measuring engine, which other browser libraries can drive through a small adapter. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents, and it's the only one with third-party dependencies.
+This repository publishes three packages. `playwright-jankless` is the one to install. It depends on [`jankless`](packages/jankless), the measuring engine, which has the `jankless` command and doesn't depend on Playwright: other browser libraries can drive it through a small adapter. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents. It depends on the engine, uses the adapter installed in your project, and is the only one with third-party dependencies.
 
 ## License
 

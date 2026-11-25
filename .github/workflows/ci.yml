@@ -29,8 +29,12 @@ jobs:
           node --input-type=module -e "const m=await import('playwright-jankless'); if (typeof m.test !== 'function') process.exit(1)"
           node -e "const m=require('jankless'); if (typeof m.measure !== 'function') process.exit(1)"
           node --input-type=module -e "const m=await import('jankless'); if (typeof m.measure !== 'function') process.exit(1)"
-          node -e "const m=require('playwright-jankless/adhoc'); if (typeof m.measureAdhoc !== 'function') process.exit(1)"
-          node --input-type=module -e "const m=await import('playwright-jankless/adhoc'); if (typeof m.measureAdhoc !== 'function') process.exit(1)"
+          node -e "const m=require('jankless/adhoc'); if (typeof m.measureAdhoc !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('jankless/adhoc'); if (typeof m.measureAdhoc !== 'function') process.exit(1)"
+          node -e "const m=require('jankless/cli'); if (typeof m.main !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('jankless/cli'); if (typeof m.main !== 'function') process.exit(1)"
+          node -e "const m=require('playwright-jankless/adapter'); if (typeof m.adapter.launch !== 'function') process.exit(1)"
+          node --input-type=module -e "const m=await import('playwright-jankless/adapter'); if (typeof m.adapter.launch !== 'function') process.exit(1)"
           node --input-type=module -e "const m=await import('jankless-mcp'); if (typeof m.createServer !== 'function') process.exit(1)"
       - run: npm run test:unit
 
