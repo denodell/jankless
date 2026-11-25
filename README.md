@@ -10,10 +10,10 @@ It only warns until you switch a check to fail, and it sends no data anywhere. T
 
 ## Three ways to use it
 
-| What you want                                                    | Package               | Where to start                                    |
+| Use                                                              | Package               | Start at                                          |
 | ---------------------------------------------------------------- | --------------------- | ------------------------------------------------- |
 | Checks in your [Playwright](https://playwright.dev) tests and CI | `playwright-jankless` | [Install](#install)                               |
-| To measure a page from the command line while you work on it     | `chrome-jankless`     | [Measure without a test](#measure-without-a-test) |
+| Measuring a page from the command line while you work on it      | `chrome-jankless`     | [Measure without a test](#measure-without-a-test) |
 | A coding agent that checks its own changes                       | `jankless-mcp`        | [The MCP server](#the-mcp-server)                 |
 
 All three use the same measuring engine, [`jankless`](packages/jankless), so they measure the same things in the same way. Most of this page is about the first one, checks in Playwright tests.
@@ -126,7 +126,7 @@ npx jankless measure http://localhost:5173/products --click "#filters"
 
 `measure` opens a running page, does the steps or a `--scroll`, and compares the result with the last one recorded under the same label, so you can check a change before there's a spec for it. The first line of its output says whether the page is less smooth, smoother, or shows no clear change. [Measure without a test](docs/ad-hoc.md) covers the steps and options.
 
-With `playwright-jankless` installed, the page opens in Playwright's Chromium. A project with no Playwright can install [`chrome-jankless`](packages/chrome-jankless) instead, and the page then opens in the Google Chrome that's already on your machine:
+With `playwright-jankless` installed, the page opens in Playwright's Chromium. In a project that doesn't use Playwright, you can install [`chrome-jankless`](packages/chrome-jankless) instead, and the page then opens in the Google Chrome that's already installed on your machine:
 
 ```bash
 npm install -D jankless chrome-jankless
@@ -305,7 +305,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 - Headless Chrome runs at 60Hz, so 120Hz numbers are a prediction.
 - Event Timing doesn't report interactions under 16ms, so `input.interactions` only counts slower ones.
 - An action that navigates to a new page can't be measured, and the result says so.
-- Work that starts more than a second after an input, such as a slow fetch that renders when it returns, isn't counted as that input's work. `measure()` also stops collecting half a second after the action's last input, so an action whose work starts later wants to wait for its result, with an `expect` on what appears.
+- Work that starts more than a second after an input, such as a slow fetch that renders when it returns, isn't counted as that input's work. `measure()` also stops collecting half a second after the action's last input. If the work starts later than that, the action should include an `expect` for what appears, so the measurement doesn't end before the work has run.
 - A page whose main thread is already busy for the whole interaction can't measurably get worse: added work takes time from the page's own rendering instead of adding to it, and only the CPU profile shows it. A development build is often like this with the CPU slowed 4x, so measure a production build. On [Actual](https://github.com/actualbudget/actual)'s transaction list, a planted 3ms per row went unreported in its dev build, and dropped frames on time from 59% to 27% in its production build.
 - A dev server that watches your project, like Vite's, reloads its pages whenever a file it watches is rewritten. `--update-snapshots` rewrites baselines next to your tests while other tests are running, so main-branch CI wants a production build (such as `vite preview`), or the baselines in the dev server's ignored files. Automatic mode keeps its history in `node_modules/.cache`, which dev servers ignore.
 
@@ -329,7 +329,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Packages
 
-This repository publishes four packages. `playwright-jankless` is the one to install for checks in your tests. It depends on [`jankless`](packages/jankless), the measuring engine, which has the `jankless` command and doesn't depend on Playwright: other browser libraries can drive it through a small adapter. [`chrome-jankless`](packages/chrome-jankless) is a second adapter, which drives the Chrome installed on your machine with no test runner. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents, and it measures through `chrome-jankless` unless you choose Playwright. Those two are the only ones with third-party dependencies.
+This repository publishes four packages. `playwright-jankless` is the one to install for checks in your tests. It depends on [`jankless`](packages/jankless), the measuring engine, which has the `jankless` command and doesn't depend on Playwright: other browser libraries can drive it through a small adapter. [`chrome-jankless`](packages/chrome-jankless) is a second adapter, which opens the Chrome that's installed on your machine and doesn't need a test runner. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents, and it measures through `chrome-jankless` unless you choose Playwright. Those two are the only ones with third-party dependencies.
 
 ## License
 
