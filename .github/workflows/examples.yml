@@ -42,15 +42,15 @@ jobs:
       - run: npm install --no-audit --no-fund
         working-directory: examples/plain-site
       - uses: ./
-        id: butter
+        id: jankless
         with:
           working-directory: examples/plain-site
-          artifact-name: plain-site-butter-baselines
+          artifact-name: plain-site-jankless-baselines
           comment: 'false'
       - name: Check the Action's outputs
         run: |
-          test "${{ steps.butter.outputs.outcome }}" = passed
-          test -f "examples/plain-site/${{ steps.butter.outputs.summary || 'test-results/butter/summary.md' }}"
+          test "${{ steps.jankless.outputs.outcome }}" = passed
+          test -f "examples/plain-site/${{ steps.jankless.outputs.summary || 'test-results/jankless/summary.md' }}"
 
   action-steps:
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
       - uses: ./setup
         id: setup
         with:
-          artifact-name: plain-site-steps-butter-baselines
+          artifact-name: plain-site-steps-jankless-baselines
       - run: npx playwright test
         working-directory: examples/plain-site
       - uses: ./report
@@ -83,10 +83,10 @@ jobs:
           comment: 'false'
       - name: Check the steps' outputs
         run: |
-          test -n "$BUTTER_BASELINE_DIR"
+          test -n "$JANKLESS_BASELINE_DIR"
           test -f "examples/plain-site/${{ steps.report.outputs.summary }}"
           if [ "${{ steps.setup.outputs.record }}" = true ]; then
-            test -n "$(find "$BUTTER_BASELINE_DIR" -type f)"
+            test -n "$(find "$JANKLESS_BASELINE_DIR" -type f)"
           fi
 
   react-list:

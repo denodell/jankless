@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
-import type { ButterTestOptions } from 'playwright-butter';
+import type { JanklessTestOptions } from 'playwright-jankless';
 
-export default defineConfig<ButterTestOptions>({
+export default defineConfig<JanklessTestOptions>({
   testDir: 'tests',
   // A measurement is a warm-up plus several reloaded runs; a traced fast scroll through a list takes a while.
   timeout: 120_000,
@@ -12,7 +12,7 @@ export default defineConfig<ButterTestOptions>({
     channel: 'chromium',
     viewport: { width: 600, height: 600 },
     hasTouch: true, // the tests swipe with touch input
-    butterOptions: { baselineDir: process.env.BUTTER_BASELINE_DIR },
+    janklessOptions: { baselineDir: process.env.JANKLESS_BASELINE_DIR },
   },
   webServer: {
     command: 'node build.mjs && node server.mjs',

@@ -1,11 +1,11 @@
 // Copies the licence and the package's README into a package folder before `npm pack` or
-// `npm publish`. playwright-butter gets the repository's README; butter-churn has its own.
+// `npm publish`. playwright-jankless gets the repository's README; jankless has its own.
 // Run by each package's prepack script: node ../../scripts/copy-package-docs.mjs <package>
 import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const REPO_URL = 'https://github.com/denodell/playwright-butter';
-const RAW_URL = 'https://raw.githubusercontent.com/denodell/playwright-butter/main';
+const REPO_URL = 'https://github.com/denodell/jankless';
+const RAW_URL = 'https://raw.githubusercontent.com/denodell/jankless/main';
 
 export function absoluteLinks(markdown) {
   return markdown.replace(/(!?)\[([^\]]*)\]\(([^)\s]+)\)/g, (match, image, text, target) => {
@@ -20,7 +20,7 @@ const pkg = process.argv[2];
 if (pkg) {
   const dir = join(repo, 'packages', pkg);
   copyFileSync(join(repo, 'LICENSE'), join(dir, 'LICENSE'));
-  if (pkg === 'playwright-butter') {
+  if (pkg === 'playwright-jankless') {
     writeFileSync(join(dir, 'README.md'), absoluteLinks(readFileSync(join(repo, 'README.md'), 'utf8')));
   }
 }

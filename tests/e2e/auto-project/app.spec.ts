@@ -1,4 +1,4 @@
-// A plain Playwright test: nothing here knows about playwright-butter.
+// A plain Playwright test: nothing here knows about playwright-jankless.
 import { test, expect } from './fixtures';
 
 test('buy, then search', async ({ page }) => {

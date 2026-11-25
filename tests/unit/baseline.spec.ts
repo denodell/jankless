@@ -8,17 +8,13 @@ import {
   machineSlug,
   slug,
   baselineFileName,
-} from '../../packages/butter-churn/src/baseline/key.js';
-import {
-  compareMetrics,
-  metricsOf,
-  INPUT_FLOOR_MS,
-} from '../../packages/butter-churn/src/baseline/compare.js';
-import { evaluate } from '../../packages/butter-churn/src/baseline/evaluate.js';
-import { formatChange } from '../../packages/butter-churn/src/baseline/message.js';
-import { recordingBaselines } from '../../packages/butter-churn/src/constants.js';
-import type { BaselineTarget, UpdateMode } from '../../packages/butter-churn/src/baseline/store.js';
-import { writeBaseline } from '../../packages/butter-churn/src/baseline/store.js';
+} from '../../packages/jankless/src/baseline/key.js';
+import { compareMetrics, metricsOf, INPUT_FLOOR_MS } from '../../packages/jankless/src/baseline/compare.js';
+import { evaluate } from '../../packages/jankless/src/baseline/evaluate.js';
+import { formatChange } from '../../packages/jankless/src/baseline/message.js';
+import { recordingBaselines } from '../../packages/jankless/src/constants.js';
+import type { BaselineTarget, UpdateMode } from '../../packages/jankless/src/baseline/store.js';
+import { writeBaseline } from '../../packages/jankless/src/baseline/store.js';
 import { makeResult } from './result-factory.js';
 
 // ---- keys ----
@@ -193,7 +189,7 @@ test('a spread wider than maxIncrease marks the check noisy', () => {
 
 // ---- evaluate (files, update modes, enforce) ----
 
-// Like playwright-butter's target: a folder per test, with the project and platform added to
+// Like playwright-jankless's target: a folder per test, with the project and platform added to
 // each file name as Playwright's default snapshot template does.
 function fakeInfo(
   dir: string,
@@ -202,7 +198,7 @@ function fakeInfo(
 ): BaselineTarget {
   return {
     path: (fileName) =>
-      join(dir, 'spec.ts-snapshots', 'butter', title, fileName).replace(/\.json$/, '-chromium-linux.json'),
+      join(dir, 'spec.ts-snapshots', 'jankless', title, fileName).replace(/\.json$/, '-chromium-linux.json'),
     root: dir,
     project: 'chromium',
     update,
@@ -213,7 +209,7 @@ function fakeInfo(
 test.describe('evaluate', () => {
   let dir: string;
   test.beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'butter-'));
+    dir = mkdtempSync(join(tmpdir(), 'jankless-'));
   });
   test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -223,7 +219,7 @@ test.describe('evaluate', () => {
     const file = JSON.parse(readFileSync(c.baseline!.path, 'utf8'));
     expect(file).toMatchObject({
       schemaVersion: 1,
-      kind: 'playwright-butter-baseline',
+      kind: 'playwright-jankless-baseline',
       key: { label: 'open filters', machine: 'amd-epyc-7763-4cpu' },
       metrics: { 'input.p95ToPaintMs': 112, 'longFrames.count': 1, 'longFrames.totalBlockingMs': 58 },
     });
@@ -326,12 +322,12 @@ test.describe('evaluate', () => {
     writeFileSync(path, '{"kind":"something-else"}');
     const c = evaluate(makeResult(), fakeInfo(dir));
     expect(c.status).toBe('baseline-created');
-    expect(c.notes.join(' ')).toMatch(/is not a playwright-butter baseline/);
+    expect(c.notes.join(' ')).toMatch(/is not a playwright-jankless baseline/);
 
     writeFileSync(path, 'not json');
     expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(/could not be read: SyntaxError/);
 
-    writeFileSync(path, '{"kind":"playwright-butter-baseline","schemaVersion":2}');
+    writeFileSync(path, '{"kind":"playwright-jankless-baseline","schemaVersion":2}');
     expect(evaluate(makeResult(), fakeInfo(dir)).notes.join(' ')).toMatch(
       /has schemaVersion 2; this version reads 1/,
     );
@@ -361,7 +357,7 @@ test.describe('evaluate', () => {
 });
 
 test('same label, different tests: separate baselines', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'butter-'));
+  const dir = mkdtempSync(join(tmpdir(), 'jankless-'));
   try {
     const a = evaluate(makeResult(), fakeInfo(dir));
     const b = evaluate(
@@ -388,11 +384,11 @@ test('blank frames are only gated on a virtualized list', () => {
   expect(gated(false)).toBe(false);
 });
 
-test('BUTTER_RECORD_BASELINES turns recording on unless it is empty, 0 or false', () => {
+test('JANKLESS_RECORD_BASELINES turns recording on unless it is empty, 0 or false', () => {
   expect(recordingBaselines({})).toBe(false);
-  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: '' })).toBe(false);
-  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: '0' })).toBe(false);
-  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: 'False' })).toBe(false);
-  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: '1' })).toBe(true);
-  expect(recordingBaselines({ BUTTER_RECORD_BASELINES: 'true' })).toBe(true);
+  expect(recordingBaselines({ JANKLESS_RECORD_BASELINES: '' })).toBe(false);
+  expect(recordingBaselines({ JANKLESS_RECORD_BASELINES: '0' })).toBe(false);
+  expect(recordingBaselines({ JANKLESS_RECORD_BASELINES: 'False' })).toBe(false);
+  expect(recordingBaselines({ JANKLESS_RECORD_BASELINES: '1' })).toBe(true);
+  expect(recordingBaselines({ JANKLESS_RECORD_BASELINES: 'true' })).toBe(true);
 });

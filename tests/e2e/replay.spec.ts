@@ -8,11 +8,11 @@ import { join } from 'node:path';
 import { files, PLAYWRIGHT_CLI } from './helpers.js';
 
 const CONFIG = 'tests/e2e/replay-project/playwright.config.ts';
-const REPORTER = join(process.cwd(), 'packages/playwright-butter/dist', 'reporter.js');
+const REPORTER = join(process.cwd(), 'packages/playwright-jankless/dist', 'reporter.js');
 
 let work: string;
 test.beforeAll(() => {
-  work = mkdtempSync(join(tmpdir(), 'butter-replay-'));
+  work = mkdtempSync(join(tmpdir(), 'jankless-replay-'));
 });
 test.afterAll(() => rmSync(work, { recursive: true, force: true }));
 test.describe.configure({ mode: 'serial' });
@@ -26,9 +26,9 @@ function run(env: Record<string, string> = {}) {
   const child = spawnSync(process.execPath, [PLAYWRIGHT_CLI, 'test', '-c', CONFIG], {
     env: {
       ...clean,
-      BUTTER_E2E_OUT: out,
-      BUTTER_E2E_SNAPSHOTS: join(work, 'snapshots'),
-      BUTTER_REPORTER: REPORTER,
+      JANKLESS_E2E_OUT: out,
+      JANKLESS_E2E_SNAPSHOTS: join(work, 'snapshots'),
+      JANKLESS_REPORTER: REPORTER,
       ...env,
     },
     encoding: 'utf8',
@@ -45,17 +45,17 @@ test('a drawn list: baseline recorded, no replay', () => {
   test.skip(!existsSync(REPORTER), 'run npm run build first');
   const r = run();
   expect(r.code).toBe(0);
-  expect(files(join(r.out, 'butter'), '.replay.webm')).toEqual([]);
+  expect(files(join(r.out, 'jankless'), '.replay.webm')).toEqual([]);
 });
 
 test('blank rows appear: a warning and a replay', () => {
   test.skip(!existsSync(REPORTER), 'run npm run build first');
   const r = run({ ROW_COST: '15' });
   expect(r.code).toBe(0); // enforce: 'warn'
-  const [webm] = files(join(r.out, 'butter'), '.replay.webm');
+  const [webm] = files(join(r.out, 'jankless'), '.replay.webm');
   expect(webm).toBeTruthy();
   expect(statSync(webm!).size).toBeGreaterThan(50_000);
-  const summary = readFileSync(join(r.out, 'butter', 'summary.md'), 'utf8');
+  const summary = readFileSync(join(r.out, 'jankless', 'summary.md'), 'utf8');
   expect(summary).toContain('blank list frames');
-  expect(summary).toContain('A replay of the scroll is attached to the test as `butter replay: catalogue`');
+  expect(summary).toContain('A replay of the scroll is attached to the test as `jankless replay: catalogue`');
 });

@@ -1,11 +1,11 @@
-import { test, expect } from '../../packages/playwright-butter/src/index.js';
+import { test, expect } from '../../packages/playwright-jankless/src/index.js';
 import { attach, notesApartFromThrottling } from '../detection/helpers.js';
 
-test.use({ butterOptions: { runs: 3 } });
+test.use({ janklessOptions: { runs: 3 } });
 
-test('a 150ms click handler', async ({ page, butter }) => {
+test('a 150ms click handler', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=150');
-  const result = await butter.measure('heavy click', async () => {
+  const result = await jankless.measure('heavy click', async () => {
     await page.click('#heavy');
   });
   await attach(result);
@@ -29,10 +29,10 @@ test('a 150ms click handler', async ({ page, butter }) => {
   expect(result.spread['longFrames.count']).toEqual({ min: 1, median: 1, max: 1 });
 });
 
-test('work a click starts in a timer, after the click has painted', async ({ page, butter }) => {
+test('work a click starts in a timer, after the click has painted', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=150&delay=300');
   // The action returns as soon as the click is sent, 300ms before the work starts.
-  const result = await butter.measure('save later', () => page.click('#later'));
+  const result = await jankless.measure('save later', () => page.click('#later'));
   await attach(result);
 
   expect(result.longFrames!.count).toBe(1);
@@ -46,24 +46,24 @@ test('work a click starts in a timer, after the click has painted', async ({ pag
   expect(result.input!.p95ToPaintMs ?? 0).toBeLessThan(100);
 });
 
-test('a click on a nested span is reported against the button', async ({ page, butter }) => {
+test('a click on a nested span is reported against the button', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=80');
-  const result = await butter.measure('nested', () => page.click('#nested .label'));
+  const result = await jankless.measure('nested', () => page.click('#nested .label'));
   await attach(result);
   expect(result.input!.byTarget.map((t) => t.target)).toEqual(['button#nested']);
 });
 
-test('a self-removing button is still named', async ({ page, butter }) => {
+test('a self-removing button is still named', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=80');
-  const result = await butter.measure('vanish', () => page.click('#vanish'));
+  const result = await jankless.measure('vanish', () => page.click('#vanish'));
   await attach(result);
   expect(result.input!.byTarget.map((t) => t.target)).toEqual(['button#vanish']);
   expect(result.longFrames!.topScripts[0]!.invoker).toBe('BUTTON#vanish.onclick');
 });
 
-test('typing into a slow search box: one interaction per key', async ({ page, butter }) => {
+test('typing into a slow search box: one interaction per key', async ({ page, jankless }) => {
   await page.goto('/search.html?ms=60');
-  const result = await butter.measure('search typing', async () => {
+  const result = await jankless.measure('search typing', async () => {
     await page.focus('#search');
     await page.locator('#search').pressSequentially('abc', { delay: 100 });
   });
@@ -77,9 +77,9 @@ test('typing into a slow search box: one interaction per key', async ({ page, bu
   expect(result.longFrames!.topScripts[0]!.fn).toBe('onSearchKeydown');
 });
 
-test('scrolling without interactions', async ({ page, butter }) => {
+test('scrolling without interactions', async ({ page, jankless }) => {
   await page.goto('/scroll.html?wait=70');
-  const result = await butter.measure('scroll', async () => {
+  const result = await jankless.measure('scroll', async () => {
     await page.mouse.move(400, 400);
     for (let i = 0; i < 5; i++) {
       await page.mouse.wheel(0, 200);
@@ -95,11 +95,11 @@ test('scrolling without interactions', async ({ page, butter }) => {
   expect(result.spread['input.p95ToPaintMs']).toBeUndefined();
 });
 
-test('load and background frames are excluded', async ({ page, butter }) => {
+test('load and background frames are excluded', async ({ page, jankless }) => {
   // mixed.html blocks 120ms during load and 90ms in a timer 300ms after load. No notes: the page
   // goes quiet after each reload, before its run.
   await page.goto('/mixed.html');
-  const result = await butter.measure('buy', () => page.click('#buy .label'));
+  const result = await jankless.measure('buy', () => page.click('#buy .label'));
   await attach(result);
   expect(result.frameClasses).toEqual({ interaction: 1, load: 0, background: 0 });
   expect(result.longFrames!.count).toBe(1);
@@ -107,12 +107,12 @@ test('load and background frames are excluded', async ({ page, butter }) => {
   expect(notesApartFromThrottling(result.notes)).toEqual([]);
 });
 
-test('a page that never goes quiet', async ({ page, butter }) => {
+test('a page that never goes quiet', async ({ page, jankless }) => {
   test.setTimeout(90_000);
   await page.goto('/mixed.html?bgevery=250');
   // Unthrottled: on Windows, Chrome's CPU throttling spaces timers irregularly (gaps of up to
   // 500ms for a 100ms interval), so a throttled page can go quiet between background jobs.
-  const result = await butter.measure('buy on a busy page', () => page.click('#buy .label'), {
+  const result = await jankless.measure('buy on a busy page', () => page.click('#buy .label'), {
     runs: 2,
     cpuThrottling: 1,
   });
@@ -122,10 +122,10 @@ test('a page that never goes quiet', async ({ page, butter }) => {
   expect(result.longFrames!.topScripts.map((s) => s.fn)).toContain('onBuy');
 });
 
-test('CPU throttling slows iteration-based work', async ({ page, butter }) => {
+test('CPU throttling slows iteration-based work', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=0&iter=3000000');
-  const at1 = await butter.measure('iter click 1x', () => page.click('#heavy'), { cpuThrottling: 1 });
-  const at4 = await butter.measure('iter click 4x', () => page.click('#heavy'), { cpuThrottling: 4 });
+  const at1 = await jankless.measure('iter click 1x', () => page.click('#heavy'), { cpuThrottling: 1 });
+  const at4 = await jankless.measure('iter click 4x', () => page.click('#heavy'), { cpuThrottling: 4 });
   await attach({ at1, at4 });
   // Chrome occasionally doesn't apply throttling (seen once on a Windows runner); the result
   // must then say so rather than pass off unthrottled numbers.
@@ -134,22 +134,22 @@ test('CPU throttling slows iteration-based work', async ({ page, butter }) => {
   expect(at1.notes.join(' ')).not.toContain('CPU throttling');
 });
 
-test("reset: 'reload', 'none' and a function", async ({ page, butter }) => {
+test("reset: 'reload', 'none' and a function", async ({ page, jankless }) => {
   // Quick mode: full mode (the default on scheduled CI) adds a run for the replay.
   const mode = 'quick';
   await page.goto('/click.html?ms=20');
   let loads = 0;
   page.on('load', () => loads++);
 
-  await butter.measure('reload', () => page.click('#heavy'), { runs: 2, mode });
+  await jankless.measure('reload', () => page.click('#heavy'), { runs: 2, mode });
   expect(loads, 'reload: runs, not runs + 1 (the warm-up uses the page as it is)').toBe(2);
 
   loads = 0;
-  await butter.measure('none', () => page.click('#heavy'), { runs: 2, mode, reset: 'none' });
+  await jankless.measure('none', () => page.click('#heavy'), { runs: 2, mode, reset: 'none' });
   expect(loads).toBe(0);
 
   let resets = 0;
-  await butter.measure('custom', () => page.click('#heavy'), {
+  await jankless.measure('custom', () => page.click('#heavy'), {
     runs: 2,
     mode,
     reset: async ({ page }) => {
@@ -160,9 +160,9 @@ test("reset: 'reload', 'none' and a function", async ({ page, butter }) => {
   expect(resets).toBe(2);
 });
 
-test('an action that navigates is reported, not measured', async ({ page, butter }) => {
+test('an action that navigates is reported, not measured', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=20');
-  const result = await butter.measure('navigates', () => page.goto('/search.html').then(() => undefined), {
+  const result = await jankless.measure('navigates', () => page.goto('/search.html').then(() => undefined), {
     runs: 2,
   });
   await attach(result);
@@ -172,9 +172,9 @@ test('an action that navigates is reported, not measured', async ({ page, butter
   expect(result.notes.join(' ')).toMatch(/navigated to a new document/);
 });
 
-test("a hostile element doesn't break the collector", async ({ page, butter }) => {
+test("a hostile element doesn't break the collector", async ({ page, jankless }) => {
   await page.goto('/click.html?ms=150&hostile=1');
-  const result = await butter.measure('hostile', () => page.click('#heavy'), { runs: 2 });
+  const result = await jankless.measure('hostile', () => page.click('#heavy'), { runs: 2 });
   await attach(result);
   // The entry survives even though describing its target threw.
   expect(result.input!.interactions).toBe(1);
@@ -187,9 +187,9 @@ test("a hostile element doesn't break the collector", async ({ page, butter }) =
   ]);
 });
 
-test('a control whose only id is generated is named by its text', async ({ page, butter }) => {
+test('a control whose only id is generated is named by its text', async ({ page, jankless }) => {
   await page.goto('/click.html?ms=80');
-  const result = await butter.measure('filter click', () => page.click('text=Filter'), { runs: 2 });
+  const result = await jankless.measure('filter click', () => page.click('text=Filter'), { runs: 2 });
   expect(result.input!.byTarget[0]!.target).toBe('button:has-text("Filter")');
   expect(result.longFrames!.topScripts[0]!.invoker).toBe('BUTTON.onclick');
 });
@@ -197,12 +197,12 @@ test('a control whose only id is generated is named by its text', async ({ page,
 // Some suites open their own pages (browser.newPage()) instead of using the page fixture.
 test('a page the test opened itself: measure() with page, and scroll() on its locator', async ({
   browser,
-  butter,
+  jankless,
 }) => {
   const own = await browser.newPage();
   try {
     await own.goto('/click.html?ms=80');
-    const clicked = await butter.measure('own page click', () => own.click('#heavy'), {
+    const clicked = await jankless.measure('own page click', () => own.click('#heavy'), {
       page: own,
       runs: 2,
     });
@@ -210,7 +210,7 @@ test('a page the test opened itself: measure() with page, and scroll() on its lo
     expect(clicked.longFrames!.topScripts[0]!.fn).toBe('onHeavyClick');
 
     await own.goto('/list.html?cost=0');
-    const scrolled = await butter.scroll(own.locator('#list'), { mode: 'quick', runs: 1 });
+    const scrolled = await jankless.scroll(own.locator('#list'), { mode: 'quick', runs: 1 });
     expect(scrolled.scroll!.scrolledPx).toBeGreaterThan(0);
   } finally {
     await own.close();

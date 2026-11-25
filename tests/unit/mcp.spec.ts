@@ -6,16 +6,16 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createServer } from '../../packages/playwright-butter-mcp/src/server.js';
-import { compareMetrics, metricsOf } from '../../packages/butter-churn/src/baseline/compare.js';
-import { resultPath } from '../../packages/butter-churn/src/output.js';
+import { createServer } from '../../packages/jankless-mcp/src/server.js';
+import { compareMetrics, metricsOf } from '../../packages/jankless/src/baseline/compare.js';
+import { resultPath } from '../../packages/jankless/src/output.js';
 import { makeResult } from './result-factory.js';
 
 let dir: string;
 let client: Client;
 
 test.beforeEach(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'butter-mcp-'));
+  dir = mkdtempSync(join(tmpdir(), 'jankless-mcp-'));
   const server = createServer({
     dir: join(dir, 'adhoc'),
     results: join(dir, 'test-results'),
@@ -35,7 +35,7 @@ const call = (name: string, args: Record<string, unknown>) =>
   client.callTool({ name, arguments: args }) as Promise<Called>;
 
 test('it names itself and says how to check a change', () => {
-  expect(client.getServerVersion()).toMatchObject({ name: 'playwright-butter', version: '1.2.3' });
+  expect(client.getServerVersion()).toMatchObject({ name: 'playwright-jankless', version: '1.2.3' });
   const instructions = client.getInstructions()!;
   expect(instructions).toContain('call measure_interaction');
   expect(instructions).toContain('Call compare_baseline with that label');
@@ -96,7 +96,7 @@ test('a label nobody measured: the error says what has been measured', async () 
     path.replace(/\.json$/, '.recipe.json'),
     JSON.stringify({
       schemaVersion: 1,
-      kind: 'playwright-butter-recipe',
+      kind: 'playwright-jankless-recipe',
       request: {
         url: 'http://localhost:5173/',
         steps: [{ action: 'click', selector: '#sort' }],
@@ -137,7 +137,7 @@ function writeTestResult() {
     baseline: null,
     notes: [],
   };
-  const folder = join(dir, 'test-results', 'butter', 'filters-open-smoothly-1234abcd');
+  const folder = join(dir, 'test-results', 'jankless', 'filters-open-smoothly-1234abcd');
   mkdirSync(folder, { recursive: true });
   writeFileSync(join(folder, 'open-filters.json'), JSON.stringify(now));
 }
@@ -166,7 +166,7 @@ test('compare_baseline with a recipe that can no longer run says what is wrong w
     resultPath(results, 'old check').replace(/\.json$/, '.recipe.json'),
     JSON.stringify({
       schemaVersion: 1,
-      kind: 'playwright-butter-recipe',
+      kind: 'playwright-jankless-recipe',
       request: { url: 'http://localhost:4173/', label: 'old check', steps: [] },
     }),
   );

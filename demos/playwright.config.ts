@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test';
-import type { ButterTestOptions } from 'playwright-butter';
+import type { JanklessTestOptions } from 'playwright-jankless';
 
 // Run from the repository root after `npm run build`:
 //   APP_VARIANT=good npx playwright test -c demos   (records baselines)
 //   APP_VARIANT=bad npx playwright test -c demos    (compares the slow versions with them)
-export default defineConfig<ButterTestOptions>({
+export default defineConfig<JanklessTestOptions>({
   testDir: 'tests',
   outputDir: 'results',
   timeout: 600_000,

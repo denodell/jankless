@@ -5,11 +5,11 @@ const PORT = 4176;
 
 export default defineConfig({
   testDir: '.',
-  outputDir: process.env.BUTTER_E2E_OUT,
-  snapshotDir: process.env.BUTTER_E2E_SNAPSHOTS,
+  outputDir: process.env.JANKLESS_E2E_OUT,
+  snapshotDir: process.env.JANKLESS_E2E_SNAPSHOTS,
   workers: 1,
   timeout: 120_000,
-  reporter: [['list'], [process.env.BUTTER_REPORTER!]],
+  reporter: [['list'], [process.env.JANKLESS_REPORTER!]],
   use: {
     baseURL: `http://localhost:${PORT}`,
     browserName: 'chromium',
