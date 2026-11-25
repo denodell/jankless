@@ -2,7 +2,12 @@
 
 `jankless.measure()` and `jankless.scroll()` need a spec file. While you're working on a page, it's often quicker to measure it directly: give Jankless the URL and what to do there, and it opens the page in Chromium, measures it the same way a test would, and compares the result with the last baseline for that check. You can do that from the command line, from a coding agent through the MCP server, or from your own script.
 
-The measuring is done by the engine, `jankless`, and a browser adapter opens the page and does the steps. `playwright-jankless` is the adapter, so it has to be installed in the project, with Playwright's Chromium (`npx playwright install chromium`).
+The measuring is done by the engine, `jankless`, and a browser adapter opens the page and does the steps. There are two:
+
+- `playwright-jankless` opens Playwright's Chromium, as your tests do. It needs `npx playwright install chromium`.
+- [`chrome-jankless`](../packages/chrome-jankless/README.md) drives the Google Chrome installed on your machine, with no Playwright. It can also join a Chrome that's already running, to measure a page as you're signed in to it.
+
+The first one installed in the project is used, in that order. `--adapter chrome-jankless`, or `JANKLESS_ADAPTER=chrome-jankless`, names one. The two share baselines, and their browsers differ, so pick one for a piece of work. A result says so when its baseline was recorded with another browser version.
 
 The page has to be running already, on a dev server or a preview build. A production build gives the most useful results, for the reason in the README's [limitations](../README.md#limitations): a development build is often busy for the whole interaction with the CPU slowed 4x, so extra work doesn't show.
 
@@ -83,6 +88,7 @@ npx jankless measure http://localhost:5173/feed --scroll "#feed" --speed fast --
 | `--enforce <enforce>` | `warn`    | `fail` exits with 1 when a check got worse.                                                   |
 | `--dir <folder>`      | see below | Where baselines and results are kept.                                                         |
 | `--headed`            | off       | Shows the browser window.                                                                     |
+| `--adapter <package>` | first one | The browser adapter to use: `playwright-jankless` or `chrome-jankless`.                       |
 | `--json`              | off       | Prints the verdict and the whole result as JSON, in the same format a test's result file has. |
 
 ### Labels and baselines
@@ -97,7 +103,7 @@ These baselines are separate from the ones your tests record. A check that shoul
 
 ## Use it from a coding agent
 
-`jankless-mcp` is an [MCP](https://modelcontextprotocol.io) server with the same measurements as tools, so a coding agent can check its own change before you review it. Its [README](../packages/jankless-mcp/README.md) covers the setup. It depends on the engine only, and uses the adapter installed in your project. It has three tools:
+`jankless-mcp` is an [MCP](https://modelcontextprotocol.io) server with the same measurements as tools, so a coding agent can check its own change before you review it. Its [README](../packages/jankless-mcp/README.md) covers the setup. It comes with `chrome-jankless`, so it measures in your installed Chrome unless you start it with `--adapter playwright-jankless`. It has three tools:
 
 | Tool                  | What it does                                                                                                                                                                             |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

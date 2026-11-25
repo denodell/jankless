@@ -80,5 +80,13 @@ export { CALIBRATE_ENV, TOOL_NAME, RECORD_ENV, SCHEMA_VERSION, recordingBaseline
 export type * from './types.js';
 
 // What an automation library provides so the engine can measure with no test around it.
-export { ADAPTER_PACKAGES, NO_ADAPTER, TYPE_DELAY_MS, loadAdapter } from './adapter.js';
+export {
+  ADAPTER_ENV,
+  ADAPTER_PACKAGES,
+  NO_ADAPTER,
+  TYPE_DELAY_MS,
+  adapterPackages,
+  loadAdapter,
+  noAdapter,
+} from './adapter.js';
 export type { Adapter, AdapterBrowser, AdapterCommand, LaunchOptions, Step } from './adapter.js';

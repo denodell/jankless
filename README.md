@@ -311,7 +311,7 @@ The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the 
 
 ## Packages
 
-This repository publishes three packages. `playwright-jankless` is the one to install. It depends on [`jankless`](packages/jankless), the measuring engine, which has the `jankless` command and doesn't depend on Playwright: other browser libraries can drive it through a small adapter. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents. It depends on the engine, uses the adapter installed in your project, and is the only one with third-party dependencies.
+This repository publishes four packages. `playwright-jankless` is the one to install. It depends on [`jankless`](packages/jankless), the measuring engine, which has the `jankless` command and doesn't depend on Playwright: other browser libraries can drive it through a small adapter. [`chrome-jankless`](packages/chrome-jankless) is a second adapter, which drives the Chrome installed on your machine with no test runner. [`jankless-mcp`](packages/jankless-mcp) is the MCP server for coding agents, and it measures through `chrome-jankless` unless you choose Playwright. Those two are the only ones with third-party dependencies.
 
 ## License
 

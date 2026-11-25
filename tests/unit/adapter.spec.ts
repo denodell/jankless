@@ -3,7 +3,15 @@ import { test, expect } from '@playwright/test';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { NO_ADAPTER, loadAdapter, type Adapter } from '../../packages/jankless/src/adapter.js';
+import {
+  ADAPTER_PACKAGES,
+  NO_ADAPTER,
+  adapterPackages,
+  loadAdapter,
+  noAdapter,
+  type Adapter,
+} from '../../packages/jankless/src/adapter.js';
+import { launchFailure } from '../../packages/chrome-jankless/src/adapter.js';
 import { help, main } from '../../packages/jankless/src/cli/cli.js';
 
 let dir: string;
@@ -12,14 +20,14 @@ test.beforeEach(() => {
 });
 test.afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-/** A project folder with a package named as the Playwright adapter is, exporting `adapter`. */
-function installAdapter(project: string, files: Record<string, string>) {
-  const pkg = join(project, 'node_modules', 'playwright-jankless');
+/** A project folder with a package named as an adapter is, exporting `adapter`. */
+function installAdapter(project: string, files: Record<string, string>, name = 'playwright-jankless') {
+  const pkg = join(project, 'node_modules', name);
   mkdirSync(join(pkg, 'dist'), { recursive: true });
   writeFileSync(
     join(pkg, 'package.json'),
     JSON.stringify({
-      name: 'playwright-jankless',
+      name,
       exports: { './adapter': { import: './dist/adapter.js', require: './dist/adapter.cjs' } },
     }),
   );
@@ -29,6 +37,44 @@ function installAdapter(project: string, files: Record<string, string>) {
 test('no adapter installed: the error says what to install', async () => {
   await expect(loadAdapter(dir, null)).rejects.toThrow(NO_ADAPTER);
   expect(NO_ADAPTER).toContain('npm install --save-dev playwright-jankless');
+  expect(NO_ADAPTER).toContain('npm install --save-dev chrome-jankless');
+});
+
+test('the first installed adapter is used, unless one is named', async () => {
+  installAdapter(dir, { 'adapter.cjs': "exports.adapter = { name: 'the Playwright one' };" });
+  installAdapter(dir, { 'adapter.cjs': "exports.adapter = { name: 'the Chrome one' };" }, 'chrome-jankless');
+  expect((await loadAdapter(dir, null, ADAPTER_PACKAGES)).name).toBe('the Playwright one');
+  expect((await loadAdapter(dir, null, ['chrome-jankless', 'playwright-jankless'])).name).toBe(
+    'the Chrome one',
+  );
+  expect((await loadAdapter(dir, null, ['chrome-jankless'])).name).toBe('the Chrome one');
+});
+
+test('a named adapter that is not installed is an error, with no falling back', async () => {
+  installAdapter(dir, { 'adapter.cjs': "exports.adapter = { name: 'the Playwright one' };" });
+  await expect(loadAdapter(dir, null, ['chrome-jankless'])).rejects.toThrow(
+    "The browser adapter chrome-jankless isn't installed in this project. Add it:\n  npm install --save-dev chrome-jankless",
+  );
+  expect(noAdapter(['x-jankless'])).toContain('npm install --save-dev x-jankless');
+});
+
+test('JANKLESS_ADAPTER names the one adapter to look for', () => {
+  expect(adapterPackages({})).toEqual(ADAPTER_PACKAGES);
+  expect(adapterPackages({ JANKLESS_ADAPTER: ' chrome-jankless ' })).toEqual(['chrome-jankless']);
+  expect(adapterPackages({ JANKLESS_ADAPTER: '' })).toEqual(ADAPTER_PACKAGES);
+});
+
+test('Chrome that will not start: the sandbox and a missing Chrome each get their own advice', () => {
+  expect(
+    launchFailure(
+      'Failed to launch the browser process: Code: 1\n\nstderr:\nRunning as root without --no-sandbox is not supported.',
+    ),
+  ).toBe(
+    "Couldn't start Chrome: it won't run as root with its sandbox. In a container, set JANKLESS_CHROME_ARGS=--no-sandbox.",
+  );
+  expect(launchFailure("Could not find Google Chrome executable for channel 'chrome'\n  at somewhere")).toBe(
+    "Couldn't start Chrome: Could not find Google Chrome executable for channel 'chrome'. chrome-jankless runs the Google Chrome installed on this machine; set JANKLESS_CHROME_PATH to another Chrome or Chromium to use that.",
+  );
 });
 
 test("the project's adapter is found, and its ES module build is the one loaded", async () => {

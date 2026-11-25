@@ -5,13 +5,14 @@
   "workspaces": [
     "packages/jankless",
     "packages/playwright-jankless",
+    "packages/chrome-jankless",
     "packages/jankless-mcp"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm run build --workspace jankless --workspace playwright-jankless --workspace jankless-mcp",
+    "build": "npm run build --workspace jankless --workspace playwright-jankless --workspace chrome-jankless --workspace jankless-mcp",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",

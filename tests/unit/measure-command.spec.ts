@@ -51,6 +51,13 @@ test('step flags keep the order they were typed in', () => {
   expect(parsed).toMatchObject({ json: false, enforce: 'warn' });
 });
 
+test('--adapter names the adapter package to measure with', () => {
+  expect(parseMeasureArgs([URL, '--click', '#a', '--adapter', 'chrome-jankless'])?.adapter).toBe(
+    'chrome-jankless',
+  );
+  expect(parseMeasureArgs([URL, '--click', '#a'])).not.toHaveProperty('adapter');
+});
+
 test('--steps and --setup take JSON', () => {
   const steps = [{ action: 'type', selector: '#q', text: 'abc' }];
   const setup = [{ action: 'click', selector: '#open' }];

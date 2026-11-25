@@ -39,6 +39,8 @@ Options:
   --enforce <enforce>    warn (default), or fail to exit with 1 when it got worse
   --dir <folder>         Where baselines and results are kept
   --headed               Show the browser window
+  --adapter <package>    The browser adapter to use, such as chrome-jankless
+                         (default: the first one installed)
   --json                 Print the outcome as JSON
   --help                 Show this help
 
@@ -54,6 +56,8 @@ export interface MeasureArgs {
   request: AdhocRequest;
   json: boolean;
   enforce: 'warn' | 'fail';
+  /** The adapter package named with --adapter. */
+  adapter?: string;
 }
 
 const usage = (message: string): never => {
@@ -117,6 +121,7 @@ export function parseMeasureArgs(args: string[]): MeasureArgs | null {
       enforce: { type: 'string', default: 'warn' },
       dir: { type: 'string' },
       headed: { type: 'boolean' },
+      adapter: { type: 'string' },
       json: { type: 'boolean' },
       help: { type: 'boolean' },
     },
@@ -169,7 +174,12 @@ export function parseMeasureArgs(args: string[]): MeasureArgs | null {
   if (values.budget !== undefined) request.budget = json(values.budget, 'budget') as AdhocRequest['budget'];
   if (values.dir !== undefined) request.dir = values.dir;
   if (values.headed) request.headed = true;
-  return { request, json: !!values.json, enforce: values.enforce as 'warn' | 'fail' };
+  return {
+    request,
+    json: !!values.json,
+    enforce: values.enforce as 'warn' | 'fail',
+    ...(values.adapter ? { adapter: values.adapter } : {}),
+  };
 }
 
 /** Relative to the working directory when inside it, absolute otherwise. */
@@ -218,7 +228,10 @@ export async function measureCommand(args: string[], options: MeasureCommandOpti
     return 1;
   }
   try {
-    outcome = await measureAdhoc(parsed.request, { adapter: options.adapter });
+    outcome = await measureAdhoc(parsed.request, {
+      // --adapter names a package to load, in place of the adapter the command came with.
+      ...(parsed.adapter ? { adapterPackages: [parsed.adapter] } : { adapter: options.adapter }),
+    });
   } catch (err) {
     // An adapter's errors can be colored, as Playwright's call logs are.
     // eslint-disable-next-line no-control-regex

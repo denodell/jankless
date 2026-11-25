@@ -298,6 +298,8 @@ export interface AdhocHooks {
   onRun?: (progress: { run: number; total: number; warmUp: boolean }) => void;
   /** The adapter that opens the browser. Default: the one installed in this project. */
   adapter?: Adapter;
+  /** The adapter packages to look for, in order, when `adapter` isn't given. Default: `JANKLESS_ADAPTER`, then every known one. */
+  adapterPackages?: string[];
 }
 
 /**
@@ -314,7 +316,7 @@ export async function measureAdhoc(input: AdhocRequest, hooks: AdhocHooks = {}):
   // A touch scroll needs a touch-enabled page, whatever `touch` says.
   const touch = request.touch === true || request.scroll?.input === 'touch';
 
-  const adapter = hooks.adapter ?? (await loadAdapter());
+  const adapter = hooks.adapter ?? (await loadAdapter(undefined, undefined, hooks.adapterPackages));
   const browser = await adapter.launch({
     headed: !!request.headed,
     viewport: request.viewport ?? DEFAULT_VIEWPORT,

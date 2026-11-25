@@ -28,7 +28,7 @@ The package has the `jankless` command. `summary` and `brief` read a run's resul
 - `launch(options)` opens a browser and returns its page as a `PageDriver`, with `open(url)`, `runSteps(steps)`, `element(selector)` and `close()`.
 - `commands` adds commands to `jankless` that only make sense with that library, such as playwright-jankless's `calibrate`.
 
-The engine looks for the packages in `ADAPTER_PACKAGES`, so a new adapter is added to that list.
+The engine looks for the packages in `ADAPTER_PACKAGES`, in order: `playwright-jankless`, then `chrome-jankless`. A new adapter is added to that list, or named with `JANKLESS_ADAPTER`.
 
 ## Licence
 
