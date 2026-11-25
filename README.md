@@ -60,7 +60,7 @@ test('filters open smoothly', async ({ page, jankless }) => {
 });
 ```
 
-`measure()` slows the CPU 4x, runs your action once as a warm-up, then reloads the page and runs it 5 more times, waiting each time until the page has loaded and gone quiet. It reports the median of each number. Only work caused by the interaction counts: frames from page load, background timers and `setInterval` callbacks are left out.
+`measure()` slows the CPU 4x, runs your action once as a warm-up, then reloads the page and runs it 5 more times, waiting each time until the page has loaded and gone quiet. It reports the median of each measurement. Only work caused by the interaction counts: frames from page load, background timers and `setInterval` callbacks are left out.
 
 That takes several times as long as the interaction itself, so these tests usually need a longer `timeout` than Playwright's 30-second default.
 
@@ -101,18 +101,18 @@ test('catalog stays drawn during a fast swipe', async ({ page, jankless }) => {
 `scroll()` makes the same repeated, reloaded runs as `measure()`, with the scroll as the action:
 
 - `'wheel'` sends a wheel gesture that the compositor scrolls.
-- `'touch'` swipes with real touch events, and throws in a context without touch support (`hasTouch: true`, or a mobile device).
+- `'touch'` swipes with real touch events, and throws in a context without touch support, which needs `hasTouch: true` or a mobile device.
 - `'keys'` presses the arrow keys 100ms apart and measures each press as an interaction.
-- `direction` is `'vertical'` (default) or `'horizontal'`.
+- `direction` is `'vertical'` by default, or `'horizontal'`.
 - `distance: 'end'` stops after 20,000px, and the result says how far the end really was. A pixel distance isn't capped.
 
-In full mode, `scroll()` also counts blank frames: frames where the list was drawn to less than half of how it looks at rest. They mean rows that weren't built in time, which only happens in a virtualized list (one that removes rows as they scroll away and builds new ones). `scroll()` detects that by watching for removed rows, and only gates blank frames on a virtualized list. `list: { virtualized: true }` overrides the detection, and `list.placeholders` makes skeleton rows count as blank:
+In full mode, `scroll()` also counts blank frames: frames where the list was drawn to less than half of how it looks at rest. They mean rows that weren't built in time, which only happens in a virtualized list, one that removes rows as they scroll away and builds new ones. `scroll()` detects that by watching for removed rows, and only gates blank frames on a virtualized list. `list: { virtualized: true }` overrides the detection, and `list.placeholders` makes skeleton rows count as blank:
 
 ```ts
 await jankless.scroll(list, { mode: 'full', list: { placeholders: ['.skeleton-row', '#e5e7eb'] } });
 ```
 
-If the list never moves, for example because the locator isn't the element that scrolls, its blank-frame numbers are reported as unavailable, not as 0%. [List detection](docs/list-detection.md) explains how blank frames are found and what the detection can't see.
+If the list never moves, for example because the locator isn't the element that scrolls, its blank-frame measurements are reported as unavailable, not as 0%. [List detection](docs/list-detection.md) explains how blank frames are found and what the detection misses.
 
 ### Replays
 
@@ -136,27 +136,27 @@ npm install -D jankless chrome-jankless
 
 The first run records a baseline next to your test, the way `toMatchSnapshot()` does, and passes. Later runs compare with it, and `npx playwright test --update-snapshots` records it again: `=all` replaces every baseline, `=changed` only those that got worse, and `=none` never writes. Renaming a test starts a new baseline.
 
-A baseline belongs to one machine. Its key includes the label, test, project, platform, mode, refresh rate, CPU throttling and CPU model, because the same work took 150ms, 197ms or 226ms on different GitHub-hosted runners ([measurements](docs/measurements.md)). A baseline from your laptop isn't used in CI. In CI, baselines come from your main branch through `baselineDir`, and a run on a CPU model with no baseline yet skips its checks. The [CI guide](docs/ci.md) covers the GitHub Action, and a dedicated or self-hosted runner gives the steadiest numbers.
+A baseline belongs to one machine. Its key includes the label, test, project, platform, mode, refresh rate, CPU throttling and CPU model, because the same work took 150ms, 197ms or 226ms on different GitHub-hosted runners, as the [measurements](docs/measurements.md) page records. A baseline from your laptop isn't used in CI. In CI, baselines come from your main branch through `baselineDir`, and a run on a CPU model with no baseline yet skips its checks. The [CI guide](docs/ci.md) covers the GitHub Action, and a dedicated or self-hosted runner gives the steadiest results.
 
 ## Results
 
-| Field                        | Meaning                                                                                                     | Gated    |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------- | -------- |
-| `input.p95ToPaintMs`         | Time from input (a click, tap or key press) to the next paint, 95th percentile, from Event Timing.          | Yes      |
-| `input.byTarget`             | The same, per element, such as `click on button#checkout`.                                                  | No       |
-| `longFrames.count`           | Animation frames over 50ms caused by the interaction, from the Long Animation Frames API.                   | Yes      |
-| `longFrames.totalBlockingMs` | Frame time beyond 50ms, added up. It's noisy, so it's only gated with `gateTotalBlocking: true`.            | Optional |
-| `longFrames.topScripts`      | The scripts that ran in those frames, with the interactions they blocked (`during`).                        | No       |
-| `frames.onTimePercent`       | Full mode: frames presented on time, out of those with an update to show. Catches drops too short for LoAF. | Yes      |
-| `frames.dropped`             | Full mode: frames that missed their deadline.                                                               | No       |
-| `list.blankFramePercent`     | Full-mode `scroll()`: frames where the list was less than half drawn. Gated on a virtualized list only.     | Yes      |
-| `list.leastDrawnPercent`     | Full-mode `scroll()`: the emptiest frame, as a percentage of the list at rest.                              | No       |
-| `profile.hotFunctions`       | Full mode: the functions that used the most CPU, with their callers, from V8's sampling profiler.           | Never    |
-| `budget120`                  | Full mode with `refreshRate: 120`: main-thread frames over 8.33ms, a prediction for 120Hz screens.          | Never    |
+| Field                        | Meaning                                                                                                       | Gated    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| `input.p95ToPaintMs`         | Time from an input, such as a click, tap or key press, to the next paint, 95th percentile, from Event Timing. | Yes      |
+| `input.byTarget`             | The same, per element, such as `click on button#checkout`.                                                    | No       |
+| `longFrames.count`           | Animation frames over 50ms caused by the interaction, from the Long Animation Frames API.                     | Yes      |
+| `longFrames.totalBlockingMs` | Frame time beyond 50ms, added up. It's noisy, so it's only gated with `gateTotalBlocking: true`.              | Optional |
+| `longFrames.topScripts`      | The scripts that ran in those frames, with the interactions they blocked, in `during`.                        | No       |
+| `frames.onTimePercent`       | Full mode: frames presented on time, out of those with an update to show. Catches drops too short for LoAF.   | Yes      |
+| `frames.dropped`             | Full mode: frames that missed their deadline.                                                                 | No       |
+| `list.blankFramePercent`     | Full-mode `scroll()`: frames where the list was less than half drawn. Gated on a virtualized list only.       | Yes      |
+| `list.leastDrawnPercent`     | Full-mode `scroll()`: the emptiest frame, as a percentage of the list at rest.                                | No       |
+| `profile.hotFunctions`       | Full mode: the functions that used the most CPU, with their callers, from V8's sampling profiler.             | Never    |
+| `budget120`                  | Full mode with `refreshRate: 120`: main-thread frames over 8.33ms, a prediction for 120Hz screens.            | Never    |
 
-A check gets worse when it grows by more than `maxIncrease` (15% by default) over its baseline, with a small floor so rounding can't trip it: 16ms of input-to-paint, 1 long frame, or 1 percentage point. On-time frames are compared on the share that was missed, so a fall from 95% to 81% can't pass as "within 15%". A number that couldn't be measured is `null`, never zero, and its reason is listed in `unavailable`.
+A check gets worse when it grows by more than `maxIncrease`, which is 15% by default, over its baseline, with a small floor so rounding can't trip it: 16ms of input-to-paint, 1 long frame, or 1 percentage point. On-time frames are compared on the share that was missed, so a fall from 95% to 81% can't pass as "within 15%". A value that couldn't be measured is `null`, never zero, and its reason is listed in `unavailable`.
 
-Full mode traces each run, which adds about 5–25% to its time without changing the other numbers ([trace categories](docs/trace-categories.md)). With React and Angular, the Long Animation Frames API names the framework's event dispatcher rather than your handler. The CPU profile in full mode names the handler itself, through your source maps when the build is minified ([frameworks](docs/frameworks.md)).
+Full mode traces each run, which adds about 5–25% to its time without changing the other measurements. [Trace categories](docs/trace-categories.md) has the timings. With React and Angular, the Long Animation Frames API names the framework's event dispatcher rather than your handler. The CPU profile in full mode names the handler itself, through your source maps when the build is minified, as [frameworks](docs/frameworks.md) explains.
 
 ## Warn first, then fail
 
@@ -180,7 +180,7 @@ Scripts blocking the interaction:
 
 ## Fix briefs
 
-When a check gets worse or misses its budget, a fix brief is written next to its result as `<result>.fix.md` and attached to the test. It's a short Markdown file meant to be pasted into a coding agent such as Claude Code or Copilot: what got worse and by how much, the interactions, scripts and functions behind it with their files and line numbers, and how to check a fix. That last part matters because a baseline belongs to one machine: the brief gives the exact command to record a baseline on the unchanged code, make the change, and run the check again, so the agent compares its fix with its own machine rather than with CI's numbers.
+When a check gets worse or misses its budget, a fix brief is written next to its result as `<result>.fix.md` and attached to the test. It's a short Markdown file meant to be pasted into a coding agent such as Claude Code or Copilot: what got worse and by how much, the interactions, scripts and functions behind it with their files and line numbers, and how to check a fix. The last part is there because a baseline belongs to one machine: the brief gives the exact command to record a baseline on the unchanged code, make the change, and run the check again, so the agent compares its fix with a baseline from its own machine and not with CI's.
 
 ```bash
 npx playwright-jankless brief --results test-results
@@ -194,11 +194,11 @@ collects every brief from a run into one file, printed or written with `--out`. 
 npx playwright-jankless init-agents
 ```
 
-adds a skill that teaches coding agents what to do with a brief: which number to move, how to read the scripts and functions it names, the usual causes and their fixes (forced layout, work on every scroll event or animation frame, re-rendering every component, slow rows in a virtualized list, and more), and how to prove the fix on their own machine without loosening the check. It goes in `.claude/skills/` for Claude Code and `.agents/skills/` for Codex and other agents that read skills from there, and `AGENTS.md` gets a short section pointing to it for the rest. `--dir` puts it somewhere else. Run it again after upgrading to update the skill, the way Playwright's own `init-agents` works.
+adds a skill that teaches coding agents what to do with a brief: which measurement to improve, how to read the scripts and functions it names, the usual causes and their fixes, such as forced layout, work on every scroll event or animation frame, re-rendering every component, and slow rows in a virtualized list, and how to prove the fix on their own machine without loosening the check. It goes in `.claude/skills/` for Claude Code and `.agents/skills/` for Codex and other agents that read skills from there, and `AGENTS.md` gets a short section that links to it for the rest. `--dir` puts it somewhere else. Running it again after an upgrade updates the skill, the way Playwright's own `init-agents` works.
 
-The skill also ships in the package at `skills/playwright-jankless/`, where [TanStack Intent](https://tanstack.com/intent/latest) and [skills-npm](https://github.com/antfu/skills-npm) find it on their own. With either of those, the skill always matches the installed version and there's nothing to rerun.
+The skill also ships in the package at `skills/playwright-jankless/`, where [TanStack Intent](https://tanstack.com/intent/latest) and [skills-npm](https://github.com/antfu/skills-npm) find it automatically. With either of those, the skill always matches the installed version and there's nothing to rerun.
 
-The skill was checked by having an agent fix the slow version of each [demo app](demos/README.md#the-agent-skill-checked-against-them) from its brief alone: all seven came back at or near the fast version's numbers.
+The skill was checked by having an agent fix the slow version of each [demo app](demos/README.md#the-agent-skill-checked-against-them) using only its brief: all seven came back at or near the fast version's results.
 
 ### The MCP server
 
@@ -226,7 +226,7 @@ expect(result).toBeSmooth({ budget: { minOnTimePercent: 90, maxLongFrames: 0 } }
 | `minOnTimePercent`     | `frames.onTimePercent`, at least  | full mode            |
 | `maxBlankFramePercent` | `list.blankFramePercent`, at most | full-mode `scroll()` |
 
-Missing a budget fails the test whatever `enforce` says, because you set the number yourself. A budget that can't be checked fails too, with the reason, such as `minOnTimePercent` in quick mode, so a budget never passes silently. The failure message lists the budget first:
+Missing a budget fails the test whatever `enforce` says, because you set the limit yourself. A budget that can't be checked fails too, with the reason, such as `minOnTimePercent` in quick mode, so a budget never passes silently. The failure message lists the budget first:
 
 ```
 "scroll locator('html') 3000px" missed its budget:
@@ -234,7 +234,7 @@ Missing a budget fails the test whatever `enforce` says, because you set the num
   frames on time 52.7% (budget: at least 90%)
 ```
 
-The numbers depend on the machine and the CPU throttling, and runners vary (see [Baselines](#baselines)), so a budget works best as a generous limit on a machine you know. Each interaction needs its own number: a sort that redraws a board once and then sits still can have only 20% of its frames on time and still be fast.
+Results depend on the machine and the CPU throttling, and runners vary, as [Baselines](#baselines) explains, so a budget works best as a generous limit on a machine you know. Each interaction needs its own limit: a sort that redraws a board once and then doesn't move can have only 20% of its frames on time and still be fast.
 
 ## Options
 
@@ -253,7 +253,7 @@ export default defineConfig<JanklessTestOptions>({
 | Option              | Default                                                         | Description                                                                                  |
 | ------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `runs`              | `5`                                                             | Measured runs. The median is reported.                                                       |
-| `cpuThrottling`     | `4`                                                             | How many times slower the CPU runs. `1` turns throttling off.                                |
+| `cpuThrottling`     | `4`                                                             | How many times slower the CPU runs. `1` disables throttling.                                 |
 | `maxIncrease`       | `0.15`                                                          | Allowed increase over the baseline.                                                          |
 | `enforce`           | `'warn'`                                                        | `'warn'` or `'fail'`.                                                                        |
 | `reset`             | `'reload'`                                                      | `'reload'`, `'none'`, or an async function.                                                  |
@@ -261,10 +261,10 @@ export default defineConfig<JanklessTestOptions>({
 | `gateTotalBlocking` | `false`                                                         | Also gate total blocking time.                                                               |
 | `mode`              | `'quick'`                                                       | `'full'` adds a Chrome trace: dropped frames, a CPU profile and, for `scroll()`, blank rows. |
 | `list`              | `{ background: 'auto', placeholders: [], virtualized: 'auto' }` | Full-mode `scroll()`: what counts as blank, and whether the list is virtualized.             |
-| `replay`            | `'on-regression'`                                               | Full mode: when to attach a replay (`'on'`, `'off'`).                                        |
+| `replay`            | `'on-regression'`                                               | Full mode: when to attach a replay. `'on'` and `'off'` are the other values.                 |
 | `refreshRate`       | `60`                                                            | `120` adds a 120Hz prediction in full mode that's reported but never gated.                  |
 
-The mode can also come from the `JANKLESS_MODE` environment variable, and scheduled CI runs use full mode by default ([mode detection](docs/mode-detection.md)).
+The mode can also come from the `JANKLESS_MODE` environment variable, and scheduled CI runs use full mode by default, as [mode detection](docs/mode-detection.md) describes.
 
 ## Reporter
 
@@ -273,7 +273,7 @@ The mode can also come from the `JANKLESS_MODE` environment variable, and schedu
 reporter: [['list'], ['playwright-jankless/reporter']],
 ```
 
-The reporter writes `test-results/jankless/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON (`schemaVersion: 1`) under `test-results/jankless/` and attached to the test, so without the reporter, `npx playwright-jankless summary` writes the same summary from those files afterwards.
+The reporter writes `test-results/jankless/summary.md`: each check's change against its baseline, such as `129ms (+20ms, +18%)`, the scripts and functions behind anything that got worse, and anything that couldn't be measured or compared. In GitHub Actions it's added to the job summary too. Its options are `outputFile`, `title` and `githubSummary`. Every result is also written as JSON, with `schemaVersion: 1`, under `test-results/jankless/` and attached to the test, so without the reporter, `npx playwright-jankless summary` writes the same summary from those files afterwards.
 
 ## Choose `maxIncrease`
 
@@ -281,7 +281,7 @@ The reporter writes `test-results/jankless/summary.md`: each check's change agai
 npx playwright-jankless calibrate --runs 5 -- --project=chromium
 ```
 
-`calibrate` runs your suite 5 times on unchanged code, without comparing or recording baselines, and prints how much each check moved between runs. For each check it suggests the smallest `maxIncrease`, in steps of 0.05, that covers that movement, and warns when a check needs more than the default. Arguments after `--` go to `playwright test`, and the results are also saved to `jankless-calibration.json`. Run it on the machine that gates your builds, since that's where the noise matters.
+`calibrate` runs your suite 5 times on unchanged code, without comparing or recording baselines, and prints how much each check moved between runs. For each check it suggests the smallest `maxIncrease`, in steps of 0.05, that covers that movement, and warns when a check needs more than the default. Arguments after `--` go to `playwright test`, and the results are also saved to `jankless-calibration.json`. It's best run on the machine that gates your builds, because that machine's noise decides whether a check passes.
 
 ## CI
 
@@ -296,18 +296,18 @@ On GitHub, two steps go around the step that already runs your Playwright tests,
 
 Pull requests compare against baselines recorded on main and get the summary as a comment. Pushes to main compare with the previous baselines, then record and publish new ones, and scheduled runs switch to full mode. For a new workflow, `uses: denodell/jankless@v1` does the same in one step and runs the tests itself. On other CI systems, setting `JANKLESS_RECORD_BASELINES=1` on main makes each check record its result into `baselineDir` after comparing, ready to upload.
 
-The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the steps it takes for other CI systems. [`examples/github-actions`](examples/github-actions) has workflows ready to copy: the two steps added to an existing workflow, the Action on its own, and the steps by hand.
+The [CI guide](docs/ci.md) has the whole workflow, the Action's inputs, and the steps it takes for other CI systems. [`examples/github-actions`](examples/github-actions) has workflows ready to copy: the two steps added to an existing workflow, the Action running the tests itself, and the same steps written out manually.
 
 ## Limitations
 
 - It measures in Chromium only. In Firefox and WebKit, measurements are skipped with a `jankless-skipped` annotation.
 - Long frames and scripts come from the main thread, so jank on the compositor thread isn't blamed on any script.
-- Headless Chrome runs at 60Hz, so 120Hz numbers are a prediction.
+- Headless Chrome runs at 60Hz, so 120Hz results are a prediction.
 - Event Timing doesn't report interactions under 16ms, so `input.interactions` only counts slower ones.
 - An action that navigates to a new page can't be measured, and the result says so.
 - Work that starts more than a second after an input, such as a slow fetch that renders when it returns, isn't counted as that input's work. `measure()` also stops collecting half a second after the action's last input. If the work starts later than that, the action should include an `expect` for what appears, so the measurement doesn't end before the work has run.
-- A page whose main thread is already busy for the whole interaction can't measurably get worse: added work takes time from the page's own rendering instead of adding to it, and only the CPU profile shows it. A development build is often like this with the CPU slowed 4x, so measure a production build. On [Actual](https://github.com/actualbudget/actual)'s transaction list, a planted 3ms per row went unreported in its dev build, and dropped frames on time from 59% to 27% in its production build.
-- A dev server that watches your project, like Vite's, reloads its pages whenever a file it watches is rewritten. `--update-snapshots` rewrites baselines next to your tests while other tests are running, so main-branch CI wants a production build (such as `vite preview`), or the baselines in the dev server's ignored files. Automatic mode keeps its history in `node_modules/.cache`, which dev servers ignore.
+- A page whose main thread is already busy for the whole interaction can't measurably get worse: added work takes time from the page's own rendering instead of adding to it, and only the CPU profile shows it. A development build is often like this with the CPU slowed 4x, so a production build is the one to measure. On [Actual](https://github.com/actualbudget/actual)'s transaction list, a planted 3ms per row went unreported in its dev build, and dropped frames on time from 59% to 27% in its production build.
+- A dev server that watches your project, like Vite's, reloads its pages whenever a file it watches is rewritten. `--update-snapshots` rewrites baselines next to your tests while other tests are running, so main-branch CI wants a production build, such as `vite preview`, or the baselines in the dev server's ignored files. Automatic mode keeps its history in `node_modules/.cache`, which dev servers ignore.
 
 ## Documentation
 
