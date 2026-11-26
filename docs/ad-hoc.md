@@ -1,15 +1,15 @@
 # Measure without a test
 
-`jankless.measure()` and `jankless.scroll()` need a spec file. While you're working on a page, it's often quicker to measure it directly: give Jankless the URL and what to do there, and it opens the page in Chromium, measures it the same way a test would, and compares the result with the last baseline for that check. You can do that from the command line, from a coding agent through the MCP server, or from your own script.
+`jankless.measure()` and `jankless.scroll()` need a spec file. While you're working on a page, it's often quicker to measure it directly. You give Jankless the URL and what to do there, and it opens the page in Chromium, measures it the same way a test would, and compares the result with the last baseline for that check. You can do that from the command line, from a coding agent through the MCP server, or from your own script.
 
-The measuring is done by the engine, `jankless`, and a browser adapter opens the page and does the steps. There are two:
+The engine, `jankless`, does the measuring, and a browser adapter opens the page and does the steps. There are two adapters:
 
-- `playwright-jankless` opens Playwright's Chromium, as your tests do. It needs `npx playwright install chromium`.
-- [`chrome-jankless`](../packages/chrome-jankless/README.md) drives the Google Chrome installed on your machine, with no Playwright. It can also join a Chrome that's already running, to measure a page as you're signed in to it.
+- `playwright-jankless` opens Playwright's Chromium, as your tests do. Playwright's Chromium has to be installed first, with `npx playwright install chromium`.
+- [`chrome-jankless`](../packages/chrome-jankless/README.md) opens the Google Chrome that's installed on your machine, and doesn't need Playwright. It can also join a Chrome that's already running, so you can measure a page while you're signed in to it.
 
-The first one installed in the project is used, in that order. `--adapter chrome-jankless`, or `JANKLESS_ADAPTER=chrome-jankless`, names one. The two share baselines, and their browsers differ, so pick one for a piece of work. A result says so when its baseline was recorded with another browser version.
+If both are installed, `playwright-jankless` is used. You can choose the other one with `--adapter chrome-jankless`, or by setting `JANKLESS_ADAPTER=chrome-jankless`. Both adapters use the same baselines, and they run different browsers, so it's best to use the same adapter for a baseline and for the measurements you compare with it. When a baseline was recorded with a different browser version, the result includes a note about it.
 
-The page has to be running already, on a dev server or a preview build. A production build gives the most useful results, for the reason in the README's [limitations](../README.md#limitations): a development build is often busy for the whole interaction with the CPU slowed 4x, so extra work doesn't show.
+The page has to be running already, on a dev server or a preview build. A production build gives the most useful results, for the reason in the README's [limitations](../README.md#limitations): a development build is often busy for the whole interaction with the CPU slowed 4x, so the extra work from a change doesn't appear in the results.
 
 ## Measure from the command line
 
@@ -28,13 +28,13 @@ Scripts in the long frames:
 Measured in quick mode, CPU slowed 4x, the median of 5 runs.
 ```
 
-The first run records a baseline. After a change, the same command compares with it, and the first line says which way the page moved:
+The first run records a baseline. After a change, the same command compares the new result with that baseline, and the first line of the output says whether the page got smoother or jankier:
 
 - `is jankier than its baseline` when a check got worse by more than `maxIncrease`.
 - `is smoother than its baseline` when a check improved by more than `maxIncrease` and nothing got worse.
 - `no clear change from its baseline` when each check moved by less than `maxIncrease`. A difference that small can be noise, so it isn't reported as better or worse.
 
-Each measurement makes a warm-up run and then 5 measured runs with the CPU slowed 4x, and reports the median, exactly as `measure()` does. The page is loaded again before each run.
+Each measurement is a warm-up run followed by 5 measured runs with the CPU slowed 4x, and the result is the median of those 5 runs, the same as with `measure()`. The page is loaded again before each run.
 
 ### Steps
 
@@ -54,7 +54,7 @@ npx jankless measure http://localhost:5173/search \
   --click "#search" --type "trail shoes" --press Enter
 ```
 
-A selector is a CSS selector or any other [Playwright selector](https://playwright.dev/docs/other-locators), such as `text=Save`.
+A selector is a CSS selector. Other kinds of selector depend on the adapter. `playwright-jankless` takes any [Playwright selector](https://playwright.dev/docs/other-locators), such as `text=Save`, and `chrome-jankless` takes Puppeteer's, such as `::-p-text(Save)`.
 
 `--setup` takes steps as JSON that run after each page load and before the measurement starts. That's where to open the dialog or the tab you want to measure inside, so that opening it isn't counted:
 
@@ -93,9 +93,9 @@ npx jankless measure http://localhost:5173/feed --scroll "#feed" --speed fast --
 
 ### Labels and baselines
 
-Without `--label`, the label is built from the steps and the URL's path, such as `click #filters on /products`. The same command therefore always compares with its own baseline, and the port is left out so that a dev server that starts on a different port keeps its baseline.
+Without `--label`, the label is built from the steps and the URL's path, such as `click #filters on /products`. So the same command always compares with its own baseline. The port is left out of the label, so a dev server that starts on a different port still uses the same baseline.
 
-A baseline here is for working on a change, not for the repository. It's recorded on your machine, on the code as it was before you changed it, and it's kept with the results in `node_modules/.cache/jankless/adhoc`. Dev servers don't watch that folder, so writing to it doesn't reload the page being measured. In a project with no `node_modules`, the files go in the system's temporary folder instead. `--baseline record` replaces the baseline once the new results are the ones you want to compare with.
+These baselines are for working on a change, and they aren't committed to the repository. A baseline is recorded on your machine, on the code as it was before you changed it, and it's kept with the results in `node_modules/.cache/jankless/adhoc`. Dev servers don't watch that folder, so writing to it doesn't reload the page being measured. In a project with no `node_modules`, the files go in the system's temporary folder instead. `--baseline record` replaces the baseline once the new results are the ones you want to compare with.
 
 `npx playwright-jankless measure` is the same command. pnpm only links the commands of packages you install directly, so with pnpm that's the one to run, unless you add `jankless` as well.
 
@@ -142,6 +142,6 @@ console.log(again.text);
 ## Limits
 
 - Steps are clicks, hovers, typing, key presses and waits. Anything else, such as a drag, a file upload or signing in through another site, needs a spec, where the whole Playwright API is available.
-- Each measurement opens a new browser with no cookies or storage. A page behind a sign-in needs `setup` steps that sign in, or a spec.
+- Each measurement opens a new browser with no cookies or storage, unless `chrome-jankless` joins a Chrome that's already running. In a new browser, a page behind a sign-in needs `setup` steps that sign in, or a spec.
 - Steps that navigate to another page can't be measured, as with `measure()`.
 - Replays aren't recorded, because there's no report to attach them to.

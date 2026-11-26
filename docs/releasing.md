@@ -1,6 +1,6 @@
 # Releasing
 
-Two packages are released together at the same version: `jankless` and `playwright-jankless`. Versions come from [changesets](https://github.com/changesets/changesets), which keeps the two in step (the `fixed` group in `.changeset/config.json`). Publishing is done by the release workflow, `.github/workflows/release.yml`, when a version tag is pushed.
+Two packages are released together at the same version: `jankless` and `playwright-jankless`. Versions come from [changesets](https://github.com/changesets/changesets), which keeps the two in step through the `fixed` group in `.changeset/config.json`. Publishing is done by the release workflow, `.github/workflows/release.yml`, when a version tag is pushed.
 
 1. Each user-facing change gets a changeset in its pull request. `npx changeset` asks for patch, minor or major and writes a file to `.changeset/`.
 2. When it's time to release, `npx changeset version` bumps both `package.json` files and adds the pending changesets to each package's `CHANGELOG.md`. The changelogs can be edited for readability before the version bump is merged to `main`.
@@ -12,10 +12,10 @@ Two packages are released together at the same version: `jankless` and `playwrig
 
 `chrome-jankless` and `jankless-mcp` each have their own version and aren't in the `fixed` group. `chrome-jankless` is published first, since `jankless-mcp` depends on it, and what follows applies to both.
 
-`jankless-mcp` has its own version and isn't in the `fixed` group, so `npx changeset version` bumps it only when a changeset names it. The release workflow doesn't publish it yet. A trusted publisher can only be added to a package that already exists, so its first version has to be published manually with `npm publish` from `packages/jankless-mcp`, after the `playwright-jankless` version it depends on is public. After that it can be added to the two loops in `release.yml`.
+`jankless-mcp` has its own version and isn't in the `fixed` group, so `npx changeset version` bumps it only when a changeset names it. The release workflow doesn't publish it yet. A trusted publisher can only be added to a package that already exists, so its first version has to be published manually with `npm publish` from `packages/jankless-mcp`, after the `jankless` and `chrome-jankless` versions it depends on are public. After that it can be added to the two loops in `release.yml`.
 
 ## npm access
 
-The workflow stages releases through npm's trusted publishing, so no npm token is stored in GitHub. Each package has a trusted publisher on npmjs.com, under its Settings tab: GitHub Actions, the user `denodell`, the repository `playwright-jankless` and the workflow `release.yml`, with direct publishing left off, so the workflow can only stage. A package's first version was published by hand with `npm publish`, because a trusted publisher can only be added to a package that already exists.
+The workflow stages releases through npm's trusted publishing, so no npm token is stored in GitHub. Each package has a trusted publisher on npmjs.com, under its Settings tab: GitHub Actions, the user `denodell`, the repository `jankless` and the workflow `release.yml`, with direct publishing left off, so the workflow can only stage. A package's first version was published manually with `npm publish`, because a trusted publisher can only be added to a package that already exists.
 
 The CI workflows pin Playwright, and so Chromium. The nightly `latest.yml` workflow runs the suite against the newest Playwright, so a change in Chrome's trace format or performance APIs shows up before users hit it.

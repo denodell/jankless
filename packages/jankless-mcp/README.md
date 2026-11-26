@@ -8,9 +8,9 @@ An [MCP](https://modelcontextprotocol.io) server for [Jankless](https://github.c
 npm install -D jankless-mcp
 ```
 
-It needs Node 20 or later and Google Chrome. The server measures in the Chrome that's installed on your machine, through [`chrome-jankless`](https://github.com/denodell/jankless/tree/main/packages/chrome-jankless), so there's no browser to download and no test runner involved.
+It needs Node 20 or later and Google Chrome. The server measures in the Chrome that's installed on your machine, through [`chrome-jankless`](https://github.com/denodell/jankless/tree/main/packages/chrome-jankless), so it doesn't need a browser download or a test runner.
 
-Then add the server to your agent. In Claude Code:
+The server is then added to your agent. In Claude Code:
 
 ```bash
 claude mcp add --transport stdio jankless -- npx jankless-mcp
@@ -33,15 +33,15 @@ The server runs in your project's folder, and the page to measure has to be runn
 
 ## Tools
 
-| Tool                  | What it does                                                                                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `measure_interaction` | Opens a URL in Chromium, does the steps or the scroll several times with the CPU slowed, and reports how smooth it was. The first call records a baseline. |
-| `compare_baseline`    | Measures a label again, exactly as it was last measured, and says whether the page is jankier, smoother, or shows no clear change.                         |
-| `get_hot_functions`   | Lists the functions that used the most CPU in a label's last result, and the scripts that ran in its long frames.                                          |
+| Tool                  | What it does                                                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `measure_interaction` | Opens a URL in Chrome, does the steps or the scroll several times with the CPU slowed, and reports how smooth it was. The first call records a baseline. |
+| `compare_baseline`    | Measures a label again, exactly as it was last measured, and says whether the page is jankier, smoother, or shows no clear change.                       |
+| `get_hot_functions`   | Lists the functions that used the most CPU in a label's last result, and the scripts that ran in its long frames.                                        |
 
 `measure_interaction` and `compare_baseline` send a progress update as each run starts, to clients that ask for them, because a measurement in full mode can take a minute or more.
 
-A typical exchange, once the agent has been asked to make the filters panel open faster:
+Here's a typical exchange, after the agent has been asked to make the filters panel open faster:
 
 1. `measure_interaction` with `{ "url": "http://localhost:5173/products", "steps": [{ "action": "click", "selector": "#filters" }], "mode": "full" }`. It records the baseline and returns the label `click #filters on /products`.
 2. `get_hot_functions` with that label, to find the code to change.
@@ -69,11 +69,11 @@ npx jankless-mcp --dir .jankless --results test-results
 | ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ |
 | `--dir <folder>`  | `node_modules/.cache/jankless/adhoc` | Where baselines and results are kept.                                                      |
 | `--results <dir>` | `test-results`                       | Playwright's output directory, so the tools can also look up a check from your test suite. |
-| `--adapter <pkg>` | `chrome-jankless`                    | The browser adapter to measure with. `playwright-jankless` is the other.                   |
+| `--adapter <pkg>` | `chrome-jankless`                    | The browser adapter to measure with. The other one is `playwright-jankless`.               |
 
-Three environment variables choose the Chrome. `JANKLESS_CHROME_PATH` is the path of another Chrome or Chromium to run. `JANKLESS_CHROME_URL` is the address of a Chrome that's already running with remote debugging, such as `http://127.0.0.1:9222`, and the server then measures in a new tab of that Chrome, with its cookies and sign-ins. `JANKLESS_CHROME_ARGS` adds command-line arguments, such as `--no-sandbox` where Chrome's sandbox can't start, as root or in some containers.
+You can choose the Chrome with three environment variables. `JANKLESS_CHROME_PATH` is the path of another Chrome or Chromium to run. `JANKLESS_CHROME_URL` is the address of a Chrome that's already running with remote debugging, such as `http://127.0.0.1:9222`, and the server then measures in a new tab of that Chrome, with its cookies and sign-ins. `JANKLESS_CHROME_ARGS` adds command-line arguments, such as `--no-sandbox` where Chrome's sandbox can't start, as root or in some containers.
 
-With `--adapter playwright-jankless`, the server measures in Playwright's Chromium, as your tests do. That package and `@playwright/test` then have to be installed in the project. Selectors other than CSS differ between the two: Chrome takes Puppeteer's `::-p-text(Save)`, and Playwright takes `text=Save`.
+With `--adapter playwright-jankless`, the server measures in Playwright's Chromium, as your tests do. That package and `@playwright/test` then have to be installed in the project. CSS selectors work with both adapters, and other kinds of selector depend on the adapter: `chrome-jankless` takes Puppeteer's, such as `::-p-text(Save)`, and `playwright-jankless` takes Playwright's, such as `text=Save`.
 
 The steps, the scroll options, baselines and limits are described in [Measure without a test](https://github.com/denodell/jankless/blob/main/docs/ad-hoc.md). The same measurements are available from the command line as `npx jankless measure`.
 
